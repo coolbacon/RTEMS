@@ -55,6 +55,58 @@ pxa255_irq_rel_CPPFLAGS = $(AM_CPPFLAGS)
 pxa255_irq_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
 endif
 
+if at91sam9x25
+include_HEADERS = at91sam9x25/include/at91sam9x25.h at91sam9x25/include/at91sam9x25_dbgu.h \
+    at91sam9x25/include/at91sam9x25_emac.h at91sam9x25/include/at91sam9x25_gpio.h \
+    at91sam9x25/include/at91sam9x25_mem.h at91sam9x25/include/at91sam9x25_pmc.h \
+    at91sam9x25/include/at91sam9x25_usart.h at91sam9x25/include/bits.h
+
+## at91sam9x25/clock
+noinst_PROGRAMS += at91sam9x25/clock.rel
+at91sam9x25_clock_rel_SOURCES = at91sam9x25/clock/clock.c
+at91sam9x25_clock_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9x25_clock_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## at91sam9x25/dbgu
+noinst_PROGRAMS += at91sam9x25/dbgu.rel
+at91sam9x25_dbgu_rel_SOURCES = at91sam9x25/dbgu/dbgu.c
+at91sam9x25_dbgu_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9x25_dbgu_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## at91sam9x25/usart
+noinst_PROGRAMS += at91sam9x25/usart.rel
+at91sam9x25_usart_rel_SOURCES = at91sam9x25/usart/usart.c
+at91sam9x25_usart_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9x25_usart_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## at91sam9x25/timer
+noinst_PROGRAMS += at91sam9x25/timer.rel
+at91sam9x25_timer_rel_SOURCES = at91sam9x25/timer/timer.c
+at91sam9x25_timer_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9x25_timer_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## at91sam9x25/pmc
+noinst_PROGRAMS += at91sam9x25/pmc.rel
+at91sam9x25_pmc_rel_SOURCES = at91sam9x25/pmc/pmc.c
+at91sam9x25_pmc_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9x25_pmc_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+noinst_PROGRAMS += at91sam9x25/gpio.rel
+at91sam9x25_gpio_rel_SOURCES = at91sam9x25/gpio/gpio.c
+at91sam9x25_gpio_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9x25_gpio_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## at91sam9x25/interrupt
+include_bsp_HEADERS += at91sam9x25/irq/irq.h
+
+noinst_PROGRAMS += at91sam9x25/irq.rel
+at91sam9x25_irq_rel_SOURCES = at91sam9x25/irq/irq.c \
+    at91sam9x25/irq/irq.h
+at91sam9x25_irq_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9x25_irq_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+endif
+
+
 if at91rm9200
 include_HEADERS = at91rm9200/include/at91rm9200.h at91rm9200/include/at91rm9200_dbgu.h \
     at91rm9200/include/at91rm9200_emac.h at91rm9200/include/at91rm9200_gpio.h \

@@ -8,6 +8,8 @@ AC_DEFUN([RTEMS_CHECK_BSPDIR],
     AC_CONFIG_SUBDIRS([atsam]);;
   beagle )
     AC_CONFIG_SUBDIRS([beagle]);;
+  core9x25 )
+    AC_CONFIG_SUBDIRS([core9x25]);;
   csb336 )
     AC_CONFIG_SUBDIRS([csb336]);;
   csb337 )

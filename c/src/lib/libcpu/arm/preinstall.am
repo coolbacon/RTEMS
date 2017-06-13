@@ -50,6 +50,43 @@ $(PROJECT_INCLUDE)/bsp/irq.h: pxa255/irq/irq.h $(PROJECT_INCLUDE)/bsp/$(dirstamp
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bsp/irq.h
 PREINSTALL_FILES += $(PROJECT_INCLUDE)/bsp/irq.h
 endif
+if at91sam9x25
+$(PROJECT_INCLUDE)/at91sam9x25.h: at91sam9x25/include/at91sam9x25.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/at91sam9x25.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/at91sam9x25.h
+
+$(PROJECT_INCLUDE)/at91sam9x25_dbgu.h: at91sam9x25/include/at91sam9x25_dbgu.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/at91sam9x25_dbgu.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/at91sam9x25_dbgu.h
+
+$(PROJECT_INCLUDE)/at91sam9x25_emac.h: at91sam9x25/include/at91sam9x25_emac.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/at91sam9x25_emac.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/at91sam9x25_emac.h
+
+$(PROJECT_INCLUDE)/at91sam9x25_gpio.h: at91sam9x25/include/at91sam9x25_gpio.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/at91sam9x25_gpio.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/at91sam9x25_gpio.h
+
+$(PROJECT_INCLUDE)/at91sam9x25_mem.h: at91sam9x25/include/at91sam9x25_mem.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/at91sam9x25_mem.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/at91sam9x25_mem.h
+
+$(PROJECT_INCLUDE)/at91sam9x25_pmc.h: at91sam9x25/include/at91sam9x25_pmc.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/at91sam9x25_pmc.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/at91sam9x25_pmc.h
+
+$(PROJECT_INCLUDE)/at91sam9x25_usart.h: at91sam9x25/include/at91sam9x25_usart.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/at91sam9x25_usart.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/at91sam9x25_usart.h
+
+$(PROJECT_INCLUDE)/bits.h: at91sam9x25/include/bits.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bits.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/bits.h
+
+$(PROJECT_INCLUDE)/bsp/irq.h: at91sam9x25/irq/irq.h $(PROJECT_INCLUDE)/bsp/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bsp/irq.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/bsp/irq.h
+endif
 if at91rm9200
 $(PROJECT_INCLUDE)/at91rm9200.h: at91rm9200/include/at91rm9200.h $(PROJECT_INCLUDE)/$(dirstamp)
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/at91rm9200.h
