@@ -35,6 +35,7 @@
 #include <sys/time.h>
 #include <sys/sysctl.h>
 #include <net/if.h>
+#include <net/if_var.h>
 #include <net/route.h>
 #include <netinet/in.h>
 #include <rtems/rtems_netinet_in.h>
@@ -48,6 +49,7 @@
 #include <netinet/tcp_var.h>
 #include <netinet/tcpip.h>
 #include <netinet/udp.h>
+#include <inttypes.h>
 
 static int fw_debug = 1;
 #ifdef IPFIREWALL_VERBOSE

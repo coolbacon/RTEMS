@@ -31,6 +31,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <sys/fcntl.h>
+#include <sys/filio.h>
 #include <sys/ttycom.h>
 
 #include <rtems/termiostypes.h>
@@ -577,7 +578,7 @@ rtems_termios_open_tty(
      * Set default parameters
      */
     tty->termios.c_iflag = BRKINT | ICRNL | IXON | IMAXBEL;
-    tty->termios.c_oflag = OPOST | ONLCR | XTABS;
+    tty->termios.c_oflag = OPOST | ONLCR | OXTABS;
     tty->termios.c_cflag = CS8 | CREAD | CLOCAL;
     tty->termios.c_lflag =
        ISIG | ICANON | IEXTEN | ECHO | ECHOK | ECHOE | ECHOCTL;
@@ -1188,7 +1189,7 @@ oproc (unsigned char c, rtems_termios_tty *tty, bool wait)
 
     case '\t':
       columnAdj = 8 - (oldColumn & 7);
-      if ((tty->termios.c_oflag & TABDLY) == XTABS) {
+      if ((tty->termios.c_oflag & TABDLY) == OXTABS) {
         int i;
 
         len = (size_t) columnAdj;

@@ -124,11 +124,11 @@ struct if_data {
 #define	IFF_LOOPBACK	0x8		/* is a loopback net */
 #define	IFF_POINTOPOINT	0x10		/* interface is point-to-point link */
 #define	IFF_SMART	0x20		/* interface manages own routes */
-#define	IFF_RUNNING	0x40		/* resources allocated */
+#define	IFF_DRV_RUNNING	0x40		/* resources allocated */
 #define	IFF_NOARP	0x80		/* no address resolution protocol */
 #define	IFF_PROMISC	0x100		/* receive all packets */
 #define	IFF_ALLMULTI	0x200		/* receive all multicast packets */
-#define	IFF_OACTIVE	0x400		/* tx hardware queue is full */
+#define	IFF_DRV_OACTIVE	0x400		/* tx hardware queue is full */
 #define	IFF_SIMPLEX	0x800		/* can't hear own transmissions */
 #define	IFF_LINK0	0x1000		/* per link layer defined bit */
 #define	IFF_LINK1	0x2000		/* per link layer defined bit */
@@ -214,7 +214,6 @@ struct	ifreq {
 		int	ifru_phys;
 		int	ifru_media;
 		caddr_t	ifru_data;
-		int	(*ifru_tap)(struct ifnet *, struct ether_header *, struct mbuf *);
 	} ifr_ifru;
 #define	ifr_addr	ifr_ifru.ifru_addr	/* address */
 #define	ifr_dstaddr	ifr_ifru.ifru_dstaddr	/* other end of p-to-p link */
@@ -226,7 +225,6 @@ struct	ifreq {
 #define ifr_phys	ifr_ifru.ifru_phys	/* physical wire */
 #define ifr_media	ifr_ifru.ifru_media	/* physical media */
 #define	ifr_data	ifr_ifru.ifru_data	/* for use by interface */
-#define ifr_tap		ifr_ifru.ifru_tap	/* tap function */
 };
 
 struct ifaliasreq {
@@ -294,10 +292,6 @@ __END_DECLS
 /* XXX - this should go away soon. */
 #include <net/if_var.h>
 
-void	ifafree(struct ifaddr *);
-
-int	looutput(struct ifnet *,
-	   struct mbuf *, struct sockaddr *, struct rtentry *);
 #endif
 
 #endif /* !_NET_IF_H_ */

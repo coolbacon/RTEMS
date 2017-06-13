@@ -35,7 +35,7 @@ typedef	__uintptr_t		vm_size_t;
 #include <sys/cdefs.h>
 
 #include <sys/time.h>
-#include <sys/ioctl.h>
+#include <sys/ioccom.h>
 
 struct mdproc {
 	int	md_flags;
@@ -248,6 +248,35 @@ void rtems_set_udp_buffer_sizes(u_long, u_long);
 void rtems_set_tcp_buffer_sizes(u_long, u_long);
 
 void rtems_set_sb_efficiency(u_long);
+
+#define IFF_OACTIVE IFF_DRV_OACTIVE
+#define IFF_RUNNING IFF_DRV_RUNNING
+
+struct ifaddr;
+void	ifafree(struct ifaddr *);
+
+struct ifnet;
+struct mbuf;
+struct sockaddr;
+struct rtentry;
+int	looutput(struct ifnet *,
+	   struct mbuf *, struct sockaddr *, struct rtentry *);
+
+typedef u_long	tcp_cc;			/* connection count per rfc1644 */
+
+#define    TCPOPT_TSTAMP_HDR		\
+    (uint32_t)(((uint32_t)TCPOPT_NOP<<24)| \
+               ((uint32_t)TCPOPT_NOP<<16)| \
+               ((uint32_t)TCPOPT_TIMESTAMP<<8)| \
+               ((uint32_t)TCPOLEN_TIMESTAMP))
+
+#define	TCPOPT_CC		11		/* CC options: RFC-1644 */
+#define TCPOPT_CCNEW		12
+#define TCPOPT_CCECHO		13
+#define	   TCPOLEN_CC			6
+#define	   TCPOLEN_CC_APPA		(TCPOLEN_CC+2)
+#define	   TCPOPT_CC_HDR(ccopt)		\
+    (TCPOPT_NOP<<24|TCPOPT_NOP<<16|(ccopt)<<8|TCPOLEN_CC)
 
 #ifdef __cplusplus
 }
