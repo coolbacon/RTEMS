@@ -174,6 +174,7 @@ libstringto_a_SOURCES = stringto/stringtodouble.c stringto/stringtofloat.c \
 noinst_LIBRARIES += libtestsupport.a
 libtestsupport_a_SOURCES =
 libtestsupport_a_SOURCES += testsupport/testbeginend.c
+libtestsupport_a_SOURCES += testsupport/testbusy.c
 libtestsupport_a_SOURCES += testsupport/testextension.c
 libtestsupport_a_SOURCES += testsupport/testparallel.c
 
@@ -195,7 +196,7 @@ libuuid_a_SOURCES = uuid/clear.c uuid/compare.c uuid/copy.c uuid/gen_uuid.c \
 
 ## xz-embedded
 noinst_LIBRARIES += libxz.a
-libxz_a_SOURCES = xz/xz/h xz/xz_crc32.c xz/xz_crc64.c \
+libxz_a_SOURCES = xz/xz/h xz/xz_crc32.c \
 	xz/xz_dec_lzma2.c xz/xz_dec_stream.c
 
 EXTRA_DIST += xz/README xz/COPING
