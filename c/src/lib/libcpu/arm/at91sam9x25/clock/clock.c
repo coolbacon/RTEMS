@@ -68,11 +68,12 @@ rtems_irq_connect_data clock_isr_data = {AT91SAM9G25_INT_SYSIRQ,
       BSP_install_rtems_irq_handler(&clock_isr_data);  \
   } while(0)
 
-uint32_t st_pimr_value;
 void Clock_driver_support_initialize_hardware(void)
 {
   uint32_t st_str;
   uint32_t clk;
+  uint32_t st_pimr_value;
+
   /* the system timer is driven from SLCK */
   clk = at91sam9g25_get_mck();
   st_pimr_value =
