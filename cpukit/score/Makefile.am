@@ -161,7 +161,6 @@ libscore_a_SOURCES += src/smpmulticastaction.c
 libscore_a_SOURCES += src/cpuset.c
 libscore_a_SOURCES += src/cpusetprintsupport.c
 libscore_a_SOURCES += src/schedulerdefaultaskforhelp.c
-libscore_a_SOURCES += src/schedulerdefaultgetaffinity.c
 libscore_a_SOURCES += src/schedulerdefaultsetaffinity.c
 libscore_a_SOURCES += src/schedulersmp.c
 libscore_a_SOURCES += src/schedulersmpstartidle.c
@@ -354,6 +353,7 @@ libscore_a_SOURCES += src/semaphore.c
 libscore_a_SOURCES += src/smpbarrierwait.c
 libscore_a_SOURCES += src/kern_tc.c
 libscore_a_SOURCES += src/libatomic.c
+libscore_a_SOURCES += src/processormaskcopy.c
 
 EXTRA_DIST = src/Unlimited.txt
 

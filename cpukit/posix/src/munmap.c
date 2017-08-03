@@ -46,26 +46,30 @@ int munmap(void *addr, size_t len)
     return -1;
   }
 
-  /*
-   * Obtain the mmap lock. Sets errno on failure.
-   */
-  if ( !mmap_mappings_lock_obtain( ))
+  /* Check for illegal addresses. Watch out for address wrap. */
+  if (addr + len < addr) {
+    errno = EINVAL;
     return -1;
+  }
+
+  mmap_mappings_lock_obtain();
 
   node = rtems_chain_first (&mmap_mappings);
   while ( !rtems_chain_is_tail( &mmap_mappings, node )) {
     mapping = (mmap_mapping*) node;
     if ( ( addr >= mapping->addr ) &&
          ( addr < ( mapping->addr + mapping->len )) ) {
-      rtems_chain_extract( node );
+      rtems_chain_extract_unprotected( node );
       /* FIXME: generally need a way to clean-up the backing object, but
        * currently it only matters for MAP_SHARED shm objects. */
       if ( mapping->is_shared_shm == true ) {
         shm_munmap(mapping->iop);
       }
-      refcnt = rtems_libio_decrement_mapping_refcnt(mapping->iop);
-      if ( refcnt == 0 ) {
-        rtems_libio_check_deferred_free(mapping->iop);
+      if ( mapping->iop != NULL ) {
+        refcnt = rtems_libio_decrement_mapping_refcnt(mapping->iop);
+        if ( refcnt == 0 ) {
+          rtems_libio_check_deferred_free(mapping->iop);
+        }
       }
       /* only free the mapping address for non-fixed mapping */
       if (( mapping->flags & MAP_FIXED ) != MAP_FIXED ) {

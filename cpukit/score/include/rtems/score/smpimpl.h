@@ -241,8 +241,8 @@ void _SMP_Send_message_broadcast(
  *  @param[in] message The message.
  */
 void _SMP_Send_message_multicast(
-  const Processor_mask targets,
-  unsigned long        message
+  const Processor_mask *targets,
+  unsigned long         message
 );
 
 typedef void ( *SMP_Action_handler )( void *arg );
@@ -334,6 +334,15 @@ bool _SMP_Before_multitasking_action_broadcast(
   #define _SMP_Request_shutdown() \
     do { } while ( 0 )
 #endif
+
+RTEMS_INLINE_ROUTINE const Processor_mask *_SMP_Get_online_processors( void )
+{
+#if defined(RTEMS_SMP)
+  return &_SMP_Online_processors;
+#else
+  return &_Processor_mask_The_one_and_only;
+#endif
+}
 
 /** @} */
 

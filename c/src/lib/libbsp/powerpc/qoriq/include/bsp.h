@@ -47,6 +47,8 @@ extern "C" {
 
 #define QORIQ_CHIP_T4240 QORIQ_CHIP('T', 4240)
 
+#define QORIQ_CHIP_VARIANT QORIQ_CHIP(QORIQ_CHIP_SERIES, QORIQ_CHIP_NUMBER)
+
 #define QORIQ_CHIP_IS_T_VARIANT(variant) ((variant) / 10000 == 'T')
 
 extern unsigned BSP_bus_frequency;
@@ -105,6 +107,8 @@ void qoriq_start_thread(void);
 void qoriq_restart_secondary_processor(
   const qoriq_start_spin_table *spin_table
 ) RTEMS_NO_RETURN;
+
+void qoriq_initialize_exceptions(void *interrupt_stack_begin);
 
 #ifdef __cplusplus
 }

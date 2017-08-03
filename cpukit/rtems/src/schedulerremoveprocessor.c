@@ -45,7 +45,13 @@ static bool _Scheduler_Check_processor_removal(
   _Thread_Wait_acquire( the_thread, &queue_context );
   _Thread_State_acquire_critical( the_thread, &state_context );
 
-  if ( _Thread_Scheduler_get_home( the_thread ) == iter_context->scheduler ) {
+  if (
+    _Thread_Scheduler_get_home( the_thread ) == iter_context->scheduler
+      && !_Processor_mask_Has_overlap(
+        &the_thread->Scheduler.Affinity,
+        _Scheduler_Get_processors( iter_context->scheduler )
+      )
+  ) {
     iter_context->status = RTEMS_RESOURCE_IN_USE;
   }
 
@@ -62,7 +68,6 @@ rtems_status_code rtems_scheduler_remove_processor(
 {
   const Scheduler_Control             *scheduler;
 #if defined(RTEMS_SMP)
-  uint32_t                             processor_count;
   Scheduler_Processor_removal_context  iter_context;
   ISR_lock_Context                     lock_context;
   Scheduler_Context                   *scheduler_context;
@@ -98,14 +103,11 @@ rtems_status_code rtems_scheduler_remove_processor(
    */
   _ISR_lock_ISR_disable( &lock_context );
   _Scheduler_Acquire_critical( scheduler, &lock_context );
-  processor_count = scheduler_context->processor_count - 1;
-  scheduler_context->processor_count = processor_count;
+  _Processor_mask_Clear( &scheduler_context->Processors, cpu_index );
   _Scheduler_Release_critical( scheduler, &lock_context );
   _ISR_lock_ISR_enable( &lock_context );
 
-  if ( processor_count == 0 ) {
-    _Thread_Iterate( _Scheduler_Check_processor_removal, &iter_context );
-  }
+  _Thread_Iterate( _Scheduler_Check_processor_removal, &iter_context );
 
   _ISR_lock_ISR_disable( &lock_context );
   _Scheduler_Acquire_critical( scheduler, &lock_context );
@@ -130,7 +132,7 @@ rtems_status_code rtems_scheduler_remove_processor(
     _Chain_Extract_unprotected( &scheduler_node->Thread.Scheduler_node.Chain );
     _Assert( _Chain_Is_empty( &idle->Scheduler.Scheduler_nodes ) );
   } else {
-    ++scheduler_context->processor_count;
+    _Processor_mask_Set( &scheduler_context->Processors, cpu_index );
   }
 
   cpu_self = _Thread_Dispatch_disable_critical( &lock_context );

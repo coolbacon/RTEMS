@@ -589,42 +589,15 @@ RTEMS_INLINE_ROUTINE bool _Scheduler_Has_processor_ownership(
 #endif
 }
 
-RTEMS_INLINE_ROUTINE void _Scheduler_Get_processor_set(
-  const Scheduler_Control *scheduler,
-  size_t                   cpusetsize,
-  cpu_set_t               *cpuset
+RTEMS_INLINE_ROUTINE const Processor_mask *_Scheduler_Get_processors(
+  const Scheduler_Control *scheduler
 )
 {
-  uint32_t cpu_count = _SMP_Get_processor_count();
-  uint32_t cpu_index;
-
-  CPU_ZERO_S( cpusetsize, cpuset );
-
-  for ( cpu_index = 0 ; cpu_index < cpu_count ; ++cpu_index ) {
 #if defined(RTEMS_SMP)
-    if ( _Scheduler_Has_processor_ownership( scheduler, cpu_index ) ) {
-      CPU_SET_S( (int) cpu_index, cpusetsize, cpuset );
-    }
+  return &_Scheduler_Get_context( scheduler )->Processors;
 #else
-    (void) scheduler;
-
-    CPU_SET_S( (int) cpu_index, cpusetsize, cpuset );
+  return &_Processor_mask_The_one_and_only;
 #endif
-  }
-}
-
-RTEMS_INLINE_ROUTINE bool _Scheduler_default_Get_affinity_body(
-  const Scheduler_Control *scheduler,
-  Thread_Control          *the_thread,
-  size_t                   cpusetsize,
-  cpu_set_t               *cpuset
-)
-{
-  (void) the_thread;
-
-  _Scheduler_Get_processor_set( scheduler, cpusetsize, cpuset );
-
-  return true;
 }
 
 bool _Scheduler_Get_affinity(
@@ -636,34 +609,14 @@ bool _Scheduler_Get_affinity(
 RTEMS_INLINE_ROUTINE bool _Scheduler_default_Set_affinity_body(
   const Scheduler_Control *scheduler,
   Thread_Control          *the_thread,
-  size_t                   cpusetsize,
-  const cpu_set_t         *cpuset
+  Scheduler_Node          *node,
+  const Processor_mask    *affinity
 )
 {
-  uint32_t cpu_count = _SMP_Get_processor_count();
-  uint32_t cpu_index;
-  bool     ok = true;
-
-  for ( cpu_index = 0 ; cpu_index < cpu_count ; ++cpu_index ) {
-#if defined(RTEMS_SMP)
-    const Per_CPU_Control   *cpu;
-    const Scheduler_Control *scheduler_of_cpu;
-
-    cpu = _Per_CPU_Get_by_index( cpu_index );
-    scheduler_of_cpu = _Scheduler_Get_by_CPU( cpu );
-
-    ok = ok
-      && ( CPU_ISSET_S( (int) cpu_index, cpusetsize, cpuset )
-        || ( !CPU_ISSET_S( (int) cpu_index, cpusetsize, cpuset )
-          && scheduler != scheduler_of_cpu ) );
-#else
-    (void) scheduler;
-
-    ok = ok && CPU_ISSET_S( (int) cpu_index, cpusetsize, cpuset );
-#endif
-  }
-
-  return ok;
+  (void) scheduler;
+  (void) the_thread;
+  (void) node;
+  return _Processor_mask_Is_subset( affinity, _SMP_Get_online_processors() );
 }
 
 bool _Scheduler_Set_affinity(
@@ -702,7 +655,9 @@ RTEMS_INLINE_ROUTINE uint32_t _Scheduler_Get_processor_count(
 )
 {
 #if defined(RTEMS_SMP)
-  return _Scheduler_Get_context( scheduler )->processor_count;
+  const Scheduler_Context *context = _Scheduler_Get_context( scheduler );
+
+  return _Processor_mask_Count( &context->Processors );
 #else
   (void) scheduler;
 
@@ -1137,10 +1092,22 @@ RTEMS_INLINE_ROUTINE Status_Control _Scheduler_Set(
   }
 
   old_scheduler = _Thread_Scheduler_get_home( the_thread );
+  new_scheduler_node = _Thread_Scheduler_get_node_by_index(
+    the_thread,
+    _Scheduler_Get_index( new_scheduler )
+  );
 
   _Scheduler_Acquire_critical( new_scheduler, &lock_context );
 
-  if ( _Scheduler_Get_processor_count( new_scheduler ) == 0 ) {
+  if (
+    _Scheduler_Get_processor_count( new_scheduler ) == 0
+      || !( *new_scheduler->Operations.set_affinity )(
+        new_scheduler,
+        the_thread,
+        new_scheduler_node,
+        &the_thread->Scheduler.Affinity
+      )
+  ) {
     _Scheduler_Release_critical( new_scheduler, &lock_context );
     _Priority_Plain_insert(
       &old_scheduler_node->Wait.Priority,
@@ -1155,10 +1122,6 @@ RTEMS_INLINE_ROUTINE Status_Control _Scheduler_Set(
   _Scheduler_Release_critical( new_scheduler, &lock_context );
 
   _Thread_Scheduler_process_requests( the_thread );
-  new_scheduler_node = _Thread_Scheduler_get_node_by_index(
-    the_thread,
-    _Scheduler_Get_index( new_scheduler )
-  );
 #else
   new_scheduler_node = old_scheduler_node;
 #endif

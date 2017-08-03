@@ -69,11 +69,11 @@
 #endif /* PPC_EXC_CONFIG_USE_FIXED_HANDLER */
 
 	.global	ppc_exc_min_prolog_async_tmpl_normal
-	.global ppc_exc_wrap_async_normal
+	.global ppc_exc_interrupt
 
 ppc_exc_min_prolog_async_tmpl_normal:
 
-	stwu	r1, -CPU_INTERRUPT_FRAME_SIZE(r1)
+	stwu	r1, -PPC_EXC_INTERRUPT_FRAME_SIZE(r1)
 
 #ifndef PPC_EXC_CONFIG_USE_FIXED_HANDLER
 	stw	VECTOR_REGISTER, PPC_EXC_VECTOR_PROLOGUE_OFFSET(r1)
@@ -84,9 +84,9 @@ ppc_exc_min_prolog_async_tmpl_normal:
 	 * We store the absolute branch target address here.  It will be used
 	 * to generate the branch operation in ppc_exc_make_prologue().
 	 */
-	.int	ppc_exc_wrap_async_normal
+	.int	ppc_exc_interrupt
 
-ppc_exc_wrap_async_normal:
+ppc_exc_interrupt:
 
 #ifdef RTEMS_PROFILING
 	/* Save non-volatile ENTRY_INSTANT_REGISTER */
@@ -502,7 +502,7 @@ ppc_exc_wrap_async_normal:
 #endif /* RTEMS_PROFILING */
 
 	/* Pop stack */
-	addi	r1, r1, CPU_INTERRUPT_FRAME_SIZE
+	addi	r1, r1, PPC_EXC_INTERRUPT_FRAME_SIZE
 
 	/* Return */
 	rfi

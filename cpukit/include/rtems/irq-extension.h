@@ -116,7 +116,7 @@ typedef void (*rtems_interrupt_handler)(void *);
  *
  * This function may block.
  *
- * @retval RTEMS_SUCCESSFUL Shall be returned in case of success.
+ * @retval RTEMS_SUCCESSFUL Successful operation.
  * @retval RTEMS_CALLED_FROM_ISR If this function is called from interrupt
  * context this shall be returned.
  * @retval RTEMS_INVALID_ADDRESS If the handler address is NULL this shall be
@@ -149,7 +149,7 @@ rtems_status_code rtems_interrupt_handler_install(
  *
  * This function may block.
  *
- * @retval RTEMS_SUCCESSFUL Shall be returned in case of success.
+ * @retval RTEMS_SUCCESSFUL Successful operation.
  * @retval RTEMS_CALLED_FROM_ISR If this function is called from interrupt
  * context this shall be returned.
  * @retval RTEMS_INVALID_ADDRESS If the handler address is NULL this shall be
@@ -189,7 +189,7 @@ typedef void (*rtems_interrupt_per_handler_routine)(
  * This function may block.  Never install or remove an interrupt handler
  * within the iteration routine.  This may result in a deadlock.
  *
- * @retval RTEMS_SUCCESSFUL Shall be returned in case of success.
+ * @retval RTEMS_SUCCESSFUL Successful operation.
  * @retval RTEMS_CALLED_FROM_ISR If this function is called from interrupt
  * context this shall be returned.
  * @retval RTEMS_INVALID_ID If the vector number is out of range this shall be
@@ -201,6 +201,43 @@ rtems_status_code rtems_interrupt_handler_iterate(
   rtems_vector_number vector,
   rtems_interrupt_per_handler_routine routine,
   void *arg
+);
+
+/**
+ * @brief Sets the processor affinity set of an interrupt vector.
+ *
+ * @param[in] vector The interrupt vector number.
+ * @param[in] affinity_size The storage size of the affinity set.
+ * @param[in] affinity_set The new processor affinity set for the interrupt
+ *   vector.  This pointer must not be @c NULL.
+ *
+ * @retval RTEMS_SUCCESSFUL Successful operation.
+ * @retval RTEMS_INVALID_ID The vector number is invalid.
+ * @retval RTEMS_INVALID_SIZE Invalid affinity set size.
+ * @retval RTEMS_INVALID_NUMBER Invalid processor affinity set.
+ */
+rtems_status_code rtems_interrupt_set_affinity(
+  rtems_vector_number  vector,
+  size_t               affinity_size,
+  const cpu_set_t     *affinity
+);
+
+/**
+ * @brief Gets the processor affinity set of an interrupt vector.
+ *
+ * @param[in] vector The interrupt vector number.
+ * @param[in] affinity_size The storage size of the affinity set.
+ * @param[out] affinity_set The current processor affinity set for the
+ *   interrupt vector.  This pointer must not be @c NULL.
+ *
+ * @retval RTEMS_SUCCESSFUL Successful operation.
+ * @retval RTEMS_INVALID_ID The vector number is invalid.
+ * @retval RTEMS_INVALID_SIZE Invalid affinity set size.
+ */
+rtems_status_code rtems_interrupt_get_affinity(
+  rtems_vector_number  vector,
+  size_t               affinity_size,
+  cpu_set_t           *affinity
 );
 
 /**
@@ -218,6 +255,11 @@ typedef struct rtems_interrupt_server_action {
 } rtems_interrupt_server_action;
 
 /**
+ * @brief The interrupt server index of the default interrupt server.
+ */
+#define RTEMS_INTERRUPT_SERVER_DEFAULT 0
+
+/**
  * @brief An interrupt server entry.
  *
  * This structure must be treated as an opaque data type.  Members must not be
@@ -230,6 +272,7 @@ typedef struct rtems_interrupt_server_action {
  */
 typedef struct {
   rtems_chain_node               node;
+  void                          *server;
   rtems_vector_number            vector;
   rtems_interrupt_server_action *actions;
 } rtems_interrupt_server_entry;
@@ -250,28 +293,29 @@ typedef struct {
 } rtems_interrupt_server_request;
 
 /**
- * @brief Initializes an interrupt server task.
+ * @brief Initializes the interrupt server tasks.
  *
- * The task will have the priority @a priority, the stack size @a stack_size,
- * the modes @a modes and the attributes @a attributes.  The identifier of the
- * server task will be returned in @a server.  Interrupt handlers can be
- * installed on the server with rtems_interrupt_server_handler_install() and
- * removed with rtems_interrupt_server_handler_remove() using this identifier.
- * In case of an interrupt the request will be forwarded to the server.  The
- * handlers are executed within the server context.  If one handler blocks on
- * something this may delay the processing of other handlers.
+ * This function tries to create an interrupt server task for each processor in
+ * the system.  The tasks will have the priority @a priority, the stack size @a
+ * stack_size, the modes @a modes and the attributes @a attributes.  The count
+ * of server tasks will be returned in @a server_count.  Interrupt handlers can
+ * be installed on an interrupt server with
+ * rtems_interrupt_server_handler_install() and removed with
+ * rtems_interrupt_server_handler_remove() using a server index.  In case of an
+ * interrupt, the request will be forwarded to the interrupt server.  The
+ * handlers are executed within the interrupt server context.  If one handler
+ * blocks on something this may delay the processing of other handlers.
  *
- * The server identifier pointer @a server may be @a NULL to initialize the
- * default server.
+ * The server count pointer @a server_count may be @a NULL.
  *
  * This function may block.
  *
  * @see rtems_task_create().
  *
- * @retval RTEMS_SUCCESSFUL Shall be returned in case of success.
- * @retval RTEMS_INCORRECT_STATE If the default server is already initialized
- * this shall be returned.
- * @retval RTEMS_TOO_MANY No free task available to create the server task.
+ * @retval RTEMS_SUCCESSFUL Successful operation.
+ * @retval RTEMS_INCORRECT_STATE The interrupt servers are not initialized.
+ * @retval RTEMS_NO_MEMORY Not enough memory.
+ * @retval RTEMS_TOO_MANY No free task available to create at least one server task.
  * @retval RTEMS_UNSATISFIED Task stack size too large.
  * @retval RTEMS_INVALID_PRIORITY Invalid task priority.
  */
@@ -280,7 +324,7 @@ rtems_status_code rtems_interrupt_server_initialize(
   size_t stack_size,
   rtems_mode modes,
   rtems_attribute attributes,
-  rtems_id *server
+  uint32_t *server_count
 );
 
 /**
@@ -288,20 +332,20 @@ rtems_status_code rtems_interrupt_server_initialize(
  * vector with number @a vector on the server @a server.
  *
  * The handler routine will be executed on the corresponding interrupt server
- * task.  A server identifier @a server of @c RTEMS_ID_NONE may be used to
- * install the handler on the default server.
+ * task.  A server index @a server_index of @c RTEMS_INTERRUPT_SERVER_DEFAULT
+ * may be used to install the handler on the default server.
  *
  * This function may block.
  *
  * @see rtems_interrupt_handler_install().
  *
- * @retval RTEMS_SUCCESSFUL Shall be returned in case of success.
- * @retval RTEMS_INCORRECT_STATE If the interrupt handler server is not
- * initialized this shall be returned.
+ * @retval RTEMS_SUCCESSFUL Successful operation.
+ * @retval RTEMS_INCORRECT_STATE The interrupt servers are not initialized.
+ * @retval RTEMS_INVALID_ID If the interrupt server index is invalid.
  * @retval * For other errors see rtems_interrupt_handler_install().
  */
 rtems_status_code rtems_interrupt_server_handler_install(
-  rtems_id server,
+  uint32_t server_index,
   rtems_vector_number vector,
   const char *info,
   rtems_option options,
@@ -313,20 +357,20 @@ rtems_status_code rtems_interrupt_server_handler_install(
  * @brief Removes the interrupt handler routine @a handler with argument @a arg
  * for the interrupt vector with number @a vector from the server @a server.
  *
- * A server identifier @a server of @c RTEMS_ID_NONE may be used to remove the
- * handler from the default server.
+ * A server index @a server_index of @c RTEMS_INTERRUPT_SERVER_DEFAULT may be
+ * used to remove the handler from the default server.
  *
  * This function may block.
  *
  * @see rtems_interrupt_handler_remove().
  *
- * @retval RTEMS_SUCCESSFUL Shall be returned in case of success.
- * @retval RTEMS_INCORRECT_STATE If the interrupt handler server is not
- * initialized this shall be returned.
+ * @retval RTEMS_SUCCESSFUL Successful operation.
+ * @retval RTEMS_INCORRECT_STATE The interrupt servers are not initialized.
+ * @retval RTEMS_INVALID_ID If the interrupt server index is invalid.
  * @retval * For other errors see rtems_interrupt_handler_remove().
  */
 rtems_status_code rtems_interrupt_server_handler_remove(
-  rtems_id server,
+  uint32_t server_index,
   rtems_vector_number vector,
   rtems_interrupt_handler handler,
   void *arg
@@ -337,31 +381,139 @@ rtems_status_code rtems_interrupt_server_handler_remove(
  * number @a vector which are installed on the interrupt server specified by
  * @a server.
  *
- * A server identifier @a server of @c RTEMS_ID_NONE may be used to specify the
- * default server.
+ * A server index @a server_index of @c RTEMS_INTERRUPT_SERVER_DEFAULT may be
+ * used to specify the default server.
  *
  * @see rtems_interrupt_handler_iterate()
  *
- * @retval RTEMS_SUCCESSFUL Shall be returned in case of success.
- * @retval RTEMS_INCORRECT_STATE If the interrupt handler server is not
- * initialized this shall be returned.
+ * @retval RTEMS_SUCCESSFUL Successful operation.
+ * @retval RTEMS_INCORRECT_STATE The interrupt servers are not initialized.
+ * @retval RTEMS_INVALID_ID If the interrupt server index is invalid.
  * @retval * For other errors see rtems_interrupt_handler_iterate().
  */
 rtems_status_code rtems_interrupt_server_handler_iterate(
-  rtems_id server,
+  uint32_t server_index,
   rtems_vector_number vector,
   rtems_interrupt_per_handler_routine routine,
   void *arg
 );
 
 /**
+ * @brief Moves the interrupt handlers installed on the specified source
+ * interrupt server to the destination interrupt server.
+ *
+ * This function must be called from thread context.  It may block.  Calling
+ * this function within the context of an interrupt server is undefined
+ * behaviour.
+ *
+ * @param[in] source_server_index The source interrupt server index.  Use
+ *   @c RTEMS_INTERRUPT_SERVER_DEFAULT to specify the default server.
+ * @param[in] vector The interrupt vector number.
+ * @param[in] destination_server_index The destination interrupt server index.
+ *   Use @c RTEMS_INTERRUPT_SERVER_DEFAULT to specify the default server.
+ *
+ * @retval RTEMS_SUCCESSFUL Successful operation
+ * @retval RTEMS_INCORRECT_STATE The interrupt servers are not initialized.
+ * @retval RTEMS_INVALID_ID The destination interrupt server index is invalid.
+ * @retval RTEMS_INVALID_ID The vector number is invalid.
+ * @retval RTEMS_INVALID_ID The destination interrupt server index is invalid.
+ */
+rtems_status_code rtems_interrupt_server_move(
+  uint32_t            source_server_index,
+  rtems_vector_number vector,
+  uint32_t            destination_server_index
+);
+
+/**
+ * @brief Suspends the specified interrupt server.
+ *
+ * A suspend request is sent to the specified interrupt server.  This function
+ * waits for an acknowledgment from the specified interrupt server.
+ *
+ * This function must be called from thread context.  It may block.  Calling
+ * this function within the context of an interrupt server is undefined
+ * behaviour.
+ *
+ * @param[in] server_index The interrupt server index.  Use
+ *   @c RTEMS_INTERRUPT_SERVER_DEFAULT to specify the default server.
+ *
+ * @see rtems_interrupt_server_resume().
+ *
+ * @retval RTEMS_SUCCESSFUL Successful operation
+ * @retval RTEMS_INCORRECT_STATE The interrupt servers are not initialized.
+ * @retval RTEMS_INVALID_ID If the interrupt server index is invalid.
+ */
+rtems_status_code rtems_interrupt_server_suspend( uint32_t server_index );
+
+/**
+ * @brief Resumes the specified interrupt server.
+ *
+ * This function must be called from thread context.  It may block.  Calling
+ * this function within the context of an interrupt server is undefined
+ * behaviour.
+ *
+ * @param[in] server_index The interrupt server index.  Use
+ *   @c RTEMS_INTERRUPT_SERVER_DEFAULT to specify the default server.
+ *
+ * @see rtems_interrupt_server_suspend().
+ *
+ * @retval RTEMS_SUCCESSFUL Successful operation
+ * @retval RTEMS_INCORRECT_STATE The interrupt servers are not initialized.
+ * @retval RTEMS_INVALID_ID If the interrupt server index is invalid.
+ */
+rtems_status_code rtems_interrupt_server_resume( uint32_t server_index );
+
+/**
+ * @brief Sets the processor affinity of the specified interrupt server.
+ *
+ * The scheduler is set determined by the highest numbered processor in the
+ * specified affinity set.
+ *
+ * This operation is only reliable in case the specified interrupt was
+ * suspended via rtems_interrupt_server_suspend().
+ *
+ * @param[in] server_index The interrupt server index.  Use
+ *   @c RTEMS_INTERRUPT_SERVER_DEFAULT to specify the default server.
+ * @param[in] affinity_size The storage size of the affinity set.
+ * @param[in] affinity The desired processor affinity set for the specified
+ *   interrupt server.
+ * @param[in] priority The task priority with respect to the corresponding
+ *   scheduler instance.
+ *
+ * @retval RTEMS_SUCCESSFUL Successful operation
+ * @retval RTEMS_INCORRECT_STATE The interrupt servers are not initialized.
+ * @retval RTEMS_INVALID_ID If the interrupt server index is invalid.
+ * @retval RTEMS_INVALID_SIZE Invalid affinity set size.
+ * @retval RTEMS_INVALID_NAME The affinity set contains no online processor.
+ * @retval RTEMS_INCORRECT_STATE The highest numbered online processor in the
+ *   specified affinity set is not owned by a scheduler.
+ * @retval RTEMS_INVALID_PRIORITY Invalid priority.
+ * @retval RTEMS_RESOURCE_IN_USE The interrupt server owns resources which deny
+ *   a scheduler change.
+ * @retval RTEMS_INVALID_NUMBER Invalid processor affinity set.
+ */
+rtems_status_code rtems_interrupt_server_set_affinity(
+  uint32_t            server_index,
+  size_t              affinity_size,
+  const cpu_set_t    *affinity,
+  rtems_task_priority priority
+);
+
+/**
  * @brief Initializes the specified interrupt server entry.
  *
+ * @param[in] server_index The interrupt server index.  Use
+ *   @c RTEMS_INTERRUPT_SERVER_DEFAULT to specify the default server.
  * @param[in] entry The interrupt server entry to initialize.
  *
  * @see rtems_interrupt_server_action_prepend().
+ *
+ * @retval RTEMS_SUCCESSFUL Successful operation.
+ * @retval RTEMS_INCORRECT_STATE The interrupt servers are not initialized.
+ * @retval RTEMS_INVALID_ID If the interrupt server index is invalid.
  */
-void rtems_interrupt_server_entry_initialize(
+rtems_status_code rtems_interrupt_server_entry_initialize(
+  uint32_t                      server_index,
   rtems_interrupt_server_entry *entry
 );
 
@@ -397,8 +549,6 @@ void rtems_interrupt_server_action_prepend(
  * This function may be called from thread or interrupt context.  It does not
  * block.  No error checking is performed.
  *
- * @param[in] server The server identifier.  Use @c RTEMS_ID_NONE to specify
- *   the default server.
  * @param[in] entry The interrupt server entry must be initialized before the
  *   first call to this function via rtems_interrupt_server_entry_initialize()
  *   and rtems_interrupt_server_action_prepend().  The entry and its actions
@@ -406,36 +556,40 @@ void rtems_interrupt_server_action_prepend(
  *   rtems_interrupt_server_entry_destroy() to destroy an entry in use.
  */
 void rtems_interrupt_server_entry_submit(
-  rtems_id                      server,
   rtems_interrupt_server_entry *entry
 );
 
 /**
  * @brief Destroys the specified interrupt server entry.
  *
- * This function must be called from thread context.  It may block.  No error
- * checking is performed.
+ * This function must be called from thread context.  It may block.  Calling
+ * this function within the context of an interrupt server is undefined
+ * behaviour.  No error checking is performed.
  *
- * @param[in] server The server identifier.  Use @c RTEMS_ID_NONE to specify
- *   the default server.
+ * @param[in] server_index The interrupt server index.  Use
+ *   @c RTEMS_INTERRUPT_SERVER_DEFAULT to specify the default server.
  * @param[in] entry The interrupt server entry to destroy.  It must have been
  *   initialized via rtems_interrupt_server_entry_initialize().
  */
 void rtems_interrupt_server_entry_destroy(
-  rtems_id                      server,
   rtems_interrupt_server_entry *entry
 );
 
 /**
  * @brief Initializes the specified interrupt server request.
  *
- * No error checking is performed.
- *
+ * @param[in] server_index The interrupt server index.  Use
+ *   @c RTEMS_INTERRUPT_SERVER_DEFAULT to specify the default server.
  * @param[in] request The interrupt server request to initialize.
  * @param[in] handler The interrupt handler for the request action.
  * @param[in] arg The interrupt handler argument for the request action.
+ *
+ * @retval RTEMS_SUCCESSFUL Successful operation.
+ * @retval RTEMS_INCORRECT_STATE The interrupt servers are not initialized.
+ * @retval RTEMS_INVALID_ID If the interrupt server index is invalid.
  */
-void rtems_interrupt_server_request_initialize(
+rtems_status_code rtems_interrupt_server_request_initialize(
+  uint32_t                        server_index,
   rtems_interrupt_server_request *request,
   rtems_interrupt_handler         handler,
   void                           *arg
@@ -452,8 +606,6 @@ void rtems_interrupt_server_request_initialize(
  * This function may be called from thread or interrupt context.  It does not
  * block.  No error checking is performed.
  *
- * @param[in] server The server identifier.  Use @c RTEMS_ID_NONE to specify
- *   the default server.
  * @param[in] request The interrupt server request must be initialized before the
  *   first call to this function via
  *   rtems_interrupt_server_request_initialize().  The request must not be
@@ -461,30 +613,27 @@ void rtems_interrupt_server_request_initialize(
  *   rtems_interrupt_server_request_destroy() to destroy a request in use.
  */
 RTEMS_INLINE_ROUTINE void rtems_interrupt_server_request_submit(
-  rtems_id                        server,
   rtems_interrupt_server_request *request
 )
 {
-  rtems_interrupt_server_entry_submit( server, &request->entry );
+  rtems_interrupt_server_entry_submit( &request->entry );
 }
 
 /**
  * @brief Destroys the specified interrupt server request.
  *
- * This function must be called from thread context.  It may block.  No error
- * checking is performed.
+ * This function must be called from thread context.  It may block.  Calling
+ * this function within the context of an interrupt server is undefined
+ * behaviour.  No error checking is performed.
  *
- * @param[in] server The server identifier.  Use @c RTEMS_ID_NONE to specify
- *   the default server.
  * @param[in] request The interrupt server request to destroy.  It must have
  *   been initialized via rtems_interrupt_server_request_initialize().
  */
 RTEMS_INLINE_ROUTINE void rtems_interrupt_server_request_destroy(
-  rtems_id                        server,
   rtems_interrupt_server_request *request
 )
 {
-  rtems_interrupt_server_entry_destroy( server, &request->entry );
+  rtems_interrupt_server_entry_destroy( &request->entry );
 }
 
 /** @} */

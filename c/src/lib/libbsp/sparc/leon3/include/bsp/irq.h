@@ -19,6 +19,7 @@
 #define LIBBSP_LEON3_IRQ_CONFIG_H
 
 #include <leon.h>
+#include <rtems/score/processormask.h>
 
 #define BSP_INTERRUPT_VECTOR_MAX_STD 15 /* Standard IRQ controller */
 #define BSP_INTERRUPT_VECTOR_MAX_EXT 31 /* Extended IRQ controller */
@@ -40,5 +41,15 @@ static inline bool bsp_interrupt_is_valid_vector(rtems_vector_number vector)
        (vector <= (rtems_vector_number) BSP_INTERRUPT_VECTOR_MAX_EXT &&
         LEON3_IrqCtrl_EIrq != 0));
 }
+
+void bsp_interrupt_set_affinity(
+  rtems_vector_number vector,
+  const Processor_mask *affinity
+);
+
+void bsp_interrupt_get_affinity(
+  rtems_vector_number vector,
+  Processor_mask *affinity
+);
 
 #endif /* LIBBSP_LEON3_IRQ_CONFIG_H */

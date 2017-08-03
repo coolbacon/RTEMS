@@ -53,37 +53,6 @@ _start:
 	bl	.Linitearly
 	bl	bsp_fdt_copy
 
-#ifdef QORIQ_HAS_WRITE_BACK_L1_CACHE
-	/*
-	 * See PowerPC e500 Core Family Reference Manual, 11.5, L1 Data Cache
-	 * Flushing.
-	 */
-	LWI	r3, 12 * 128
-	mtctr	r3
-	LWI	r4, bsp_section_bss_begin
-1:
-	dcbz	r0, r4
-	addi	r4, r4, 32
-	bdnz	1b
-#endif
-
-	bl	qoriq_l1cache_invalidate
-
-#ifdef QORIQ_CLUSTER_1_L2CSR0
-	LWI	r3, QORIQ_CLUSTER_1_L2CSR0
-	bl	qoriq_l2cache_flush_invalidate
-#endif
-
-#ifdef QORIQ_CLUSTER_2_L2CSR0
-	LWI	r3, QORIQ_CLUSTER_2_L2CSR0
-	bl	qoriq_l2cache_flush_invalidate
-#endif
-
-#ifdef QORIQ_CLUSTER_3_L2CSR0
-	LWI	r3, QORIQ_CLUSTER_3_L2CSR0
-	bl	qoriq_l2cache_flush_invalidate
-#endif
-
 	/* Get start stack */
 	LWI	START_STACK, start_stack_end
 
@@ -94,12 +63,18 @@ _start:
 	LWI	r4, bsp_section_fast_text_load_begin
 	LWI	r5, bsp_section_fast_text_size
 	bl	.Lcopy
+	LWI	r3, bsp_section_fast_text_begin
+	LWI	r4, bsp_section_fast_text_size
+	bl	rtems_cache_flush_multiple_data_lines
 
 	/* Copy read-only data */
 	LWI	r3, bsp_section_rodata_begin
 	LWI	r4, bsp_section_rodata_load_begin
 	LWI	r5, bsp_section_rodata_size
 	bl	.Lcopy
+	LWI	r3, bsp_section_rodata_begin
+	LWI	r4, bsp_section_rodata_size
+	bl	rtems_cache_flush_multiple_data_lines
 
 	/* Copy fast data */
 	LWI	r3, bsp_section_fast_data_begin
@@ -206,7 +181,7 @@ _start:
 	/* Add TS1 entry for the first 4GiB of RAM */
 	li	r3, SCRATCH_TLB
 	li	r4, FSL_EIS_MAS1_TS
-	li	r5, FSL_EIS_MAS2_I
+	li	r5, FSL_EIS_MAS2_M
 	li	r6, FSL_EIS_MAS3_SR | FSL_EIS_MAS3_SW | FSL_EIS_MAS3_SX
 	li	r7, 0
 	li	r8, 0
@@ -337,105 +312,149 @@ _start_secondary_processor:
 	.section ".bsp_start_text", "ax"
 	.align 4
 bsp_exc_vector_base:
-	stw	r1, ppc_exc_lock_crit@sdarel(r13)
-	stw	r4, ppc_exc_vector_register_crit@sdarel(r13)
-	li	r4, -32767
-	b	ppc_exc_wrap_bookE_crit
+	/* Critical input */
 	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 2
-	b	ppc_exc_wrap_nopush_e500_mchk
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 0
+	b	ppc_exc_fatal_critical
+	/* Machine check */
 	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 3
-	b	ppc_exc_wrap_nopush_std
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 1
+	b	ppc_exc_fatal_machine_check
+	/* Data storage */
 	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 4
-	b	ppc_exc_wrap_nopush_std
-	stwu	r1, -CPU_INTERRUPT_FRAME_SIZE(r1)
-#ifndef PPC_EXC_CONFIG_USE_FIXED_HANDLER
-	stw	r4, PPC_EXC_VECTOR_PROLOGUE_OFFSET(r1)
-	li	r4, -32763
-#endif
-	b	ppc_exc_wrap_async_normal
-#ifdef PPC_EXC_CONFIG_USE_FIXED_HANDLER
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 2
+	b	ppc_exc_fatal_normal
+	/* Instruction storage */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 3
+	b	ppc_exc_fatal_normal
+	/* External input */
+	stwu	r1, -PPC_EXC_INTERRUPT_FRAME_SIZE(r1)
+	b	ppc_exc_interrupt
 	nop
 	nop
+	/* Alignment */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 5
+	b	ppc_exc_fatal_normal
+	/* Program */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 6
+	b	ppc_exc_fatal_normal
+#ifdef __PPC_CPU_E6500__
+	/* Floating-point unavailable */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 7
+	b	ppc_exc_fatal_normal
 #endif
+	/* System call */
 	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 6
-	b	ppc_exc_wrap_nopush_std
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 8
+	b	ppc_exc_fatal_normal
+#ifdef __PPC_CPU_E6500__
+	/* APU unavailable */
 	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 7
-	b	ppc_exc_wrap_nopush_std
-	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 8
-	b	ppc_exc_wrap_nopush_std
-system_call:
-	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 12
-	b	ppc_exc_wrap_nopush_std
-	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 24
-	b	ppc_exc_wrap_nopush_std
-	stwu	r1, -CPU_INTERRUPT_FRAME_SIZE(r1)
-#ifndef PPC_EXC_CONFIG_USE_FIXED_HANDLER
-	stw	r4, PPC_EXC_VECTOR_PROLOGUE_OFFSET(r1)
-	li	r4, -32752
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 9
+	b	ppc_exc_fatal_normal
 #endif
-	b	ppc_exc_wrap_async_normal
-#ifdef PPC_EXC_CONFIG_USE_FIXED_HANDLER
-	nop
-	nop
+	/* Decrementer */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 10
+	b	ppc_exc_fatal_normal
+	/* Fixed-interval timer interrupt */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 11
+	b	ppc_exc_fatal_normal
+	/* Watchdog timer interrupt */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 12
+	b	ppc_exc_fatal_critical
+	/* Data TLB error */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 13
+	b	ppc_exc_fatal_normal
+	/* Instruction TLB error */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 14
+	b	ppc_exc_fatal_normal
+	/* Debug */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 15
+	b	ppc_exc_fatal_debug
+	/* SPE APU unavailable or AltiVec unavailable */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 32
+	b	ppc_exc_fatal_normal
+	/* SPE floating-point data exception or AltiVec assist */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 33
+	b	ppc_exc_fatal_normal
+#ifndef __PPC_CPU_E6500__
+	/* SPE floating-point round exception */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 34
+	b	ppc_exc_fatal_normal
 #endif
-	stwu	r1, -CPU_INTERRUPT_FRAME_SIZE(r1)
-#ifndef PPC_EXC_CONFIG_USE_FIXED_HANDLER
-	stw	r4, PPC_EXC_VECTOR_PROLOGUE_OFFSET(r1)
-	li	r4, -32749
+	/* Performance monitor */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 35
+	b	ppc_exc_fatal_normal
+#ifdef __PPC_CPU_E6500__
+	/* Processor doorbell interrupt */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 36
+	b	ppc_exc_fatal_normal
+	/* Processor doorbell critical interrupt */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 37
+	b	ppc_exc_fatal_critical
+	/* Guest processor doorbell */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 38
+	b	ppc_exc_fatal_normal
+	/* Guest processor doorbell critical and machine check */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 39
+	b	ppc_exc_fatal_critical
+	/* Hypervisor system call */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 40
+	b	ppc_exc_fatal_normal
+	/* Hypervisor privilege */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 41
+	b	ppc_exc_fatal_normal
+	/* LRAT error */
+	stwu	r1, -EXC_GENERIC_SIZE(r1)
+	stw	r3, GPR3_OFFSET(r1)
+	li	r3, 42
+	b	ppc_exc_fatal_normal
 #endif
-	b	ppc_exc_wrap_async_normal
-#ifdef PPC_EXC_CONFIG_USE_FIXED_HANDLER
-	nop
-	nop
-#endif
-	stw	r1, ppc_exc_lock_crit@sdarel(r13)
-	stw	r4, ppc_exc_vector_register_crit@sdarel(r13)
-	li	r4, -32748
-	b	ppc_exc_wrap_bookE_crit
-	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 18
-	b	ppc_exc_wrap_nopush_std
-	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 17
-	b	ppc_exc_wrap_nopush_std
-	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 13
-	b	ppc_exc_wrap_nopush_bookE_crit
-	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 10
-	b	ppc_exc_wrap_nopush_std
-	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 25
-	b	ppc_exc_wrap_nopush_std
-	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 26
-	b	ppc_exc_wrap_nopush_std
-	stwu	r1, -EXC_GENERIC_SIZE(r1)
-	stw	r4, GPR4_OFFSET(r1)
-	li	r4, 15
-	b	ppc_exc_wrap_nopush_std
 
 /* Symbol provided for debugging and tracing */
 bsp_exc_vector_end:
