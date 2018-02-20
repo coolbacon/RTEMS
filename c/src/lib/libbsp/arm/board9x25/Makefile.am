@@ -6,21 +6,11 @@ include_bspdir = $(includedir)/bsp
 
 dist_project_lib_DATA = bsp_specs
 
-include_HEADERS = include/bsp.h lib/pio.h lib/pio_it.h
+include_HEADERS = include/bsp.h lib/pio.h lib/pio_it.h lib/trace.h lib/at91sam9xx5_lib.h
 include_HEADERS += ../../shared/include/tm27.h
 
 include_bsp_HEADERS =
 libbsp_a_CPPFLAGS =
-
-if ENABLE_UMON
-include_umondir = $(includedir)/umon
-include_umon_HEADERS  = ../../shared/umon/cli.h
-include_umon_HEADERS += ../../shared/umon/monlib.h
-include_umon_HEADERS += ../../shared/umon/tfs.h
-
-include_rtemsdir = $(includedir)/rtems
-include_rtems_HEADERS  = ../../shared/umon/umon.h
-endif
 
 nodist_include_HEADERS = include/bspopts.h
 nodist_include_bsp_HEADERS = ../../shared/include/bootcard.h
@@ -66,15 +56,6 @@ libbsp_a_SOURCES += ../../shared/src/irq-shell.c
 
 # abort
 libbsp_a_SOURCES += ../shared/abort/abort.c
-# umon
-if ENABLE_UMON
-libbsp_a_SOURCES += ../../shared/umon/umonrtemsglue.c  \
-    ../../shared/umon/monlib.c ../../shared/umon/tfsDriver.c \
-    ../../shared/umon/umoncons.c startup/umonsupp.c
-endif
-if ENABLE_UMON_CONSOLE
-libbsp_a_SOURCES += ../../shared/umon/umoncons.c
-endif
 
 # Cache
 libbsp_a_SOURCES += ../../../libcpu/shared/src/cache_manager.c

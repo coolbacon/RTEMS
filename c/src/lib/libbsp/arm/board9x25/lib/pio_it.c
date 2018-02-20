@@ -35,10 +35,10 @@
  *        Headers
  *----------------------------------------------------------------------------*/
 
-#include <at91sam9xx5.h>
+#include <at91sam9xx5_lib.h>
 #include "pio_it.h"
-#include <stdio.h>
 #include <assert.h>
+
 
 /*----------------------------------------------------------------------------
  *        Local definitions
@@ -48,6 +48,10 @@
  * constant can be increased, but the current value is the smallest possible
  * that will be compatible with all existing projects. */
 #define MAX_INTERRUPT_SOURCES       7
+
+
+
+
 
 /*----------------------------------------------------------------------------
  *        Local types

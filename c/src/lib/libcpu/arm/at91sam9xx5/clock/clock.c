@@ -73,12 +73,12 @@ rtems_irq_connect_data clock_isr_data = {
 static void Clock_driver_support_initialize_hardware(void)
 {
   uint32_t st_str;
-  int slck;
+  int clk;
   unsigned long value;
 
   /* the system timer is driven from SLCK */
-  slck = at91sam9xx5_get_slck();
-  value = (((rtems_configuration_get_microseconds_per_tick() * slck) +
+  clk = at91sam9xx5_get_mck();
+  value = ((((uint64_t)rtems_configuration_get_microseconds_per_tick() * clk) +
                       (1000000/2))/ 1000000);
 
   /* read the status to clear the int */
@@ -88,8 +88,8 @@ static void Clock_driver_support_initialize_hardware(void)
 
   /* set priority */
   //AIC_SMR_REG(AIC_SMR_SYSIRQ) = AIC_SMR_PRIOR(0x7);
-  AIC->AIC_SMR[SYS_IRQn] = AIC_SMR_PRIOR_HIGHEST
-  	| AIC_SMR_SRCTYPE_INT_EDGE_TRIGGERED;
+  AIC->AIC_SMR[SYS_IRQn] = AIC_SMR_PRIOR_HIGHEST;
+  	//| AIC_SMR_SRCTYPE_INT_EDGE_TRIGGERED;
 
   /* set the timer value */
   //ST_REG(ST_PIMR) = value;

@@ -49,37 +49,18 @@ $(PROJECT_INCLUDE)/pio_it.h: lib/pio_it.h $(PROJECT_INCLUDE)/$(dirstamp)
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/pio_it.h
 PREINSTALL_FILES += $(PROJECT_INCLUDE)/pio_it.h
 
+$(PROJECT_INCLUDE)/trace.h: lib/trace.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/trace.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/trace.h
+
+$(PROJECT_INCLUDE)/at91sam9xx5_lib.h: lib/at91sam9xx5_lib.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/at91sam9xx5_lib.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/at91sam9xx5_lib.h
+
 $(PROJECT_INCLUDE)/tm27.h: ../../shared/include/tm27.h $(PROJECT_INCLUDE)/$(dirstamp)
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/tm27.h
 PREINSTALL_FILES += $(PROJECT_INCLUDE)/tm27.h
 
-if ENABLE_UMON
-$(PROJECT_INCLUDE)/umon/$(dirstamp):
-	@$(MKDIR_P) $(PROJECT_INCLUDE)/umon
-	@: > $(PROJECT_INCLUDE)/umon/$(dirstamp)
-PREINSTALL_DIRS += $(PROJECT_INCLUDE)/umon/$(dirstamp)
-
-$(PROJECT_INCLUDE)/umon/cli.h: ../../shared/umon/cli.h $(PROJECT_INCLUDE)/umon/$(dirstamp)
-	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/umon/cli.h
-PREINSTALL_FILES += $(PROJECT_INCLUDE)/umon/cli.h
-
-$(PROJECT_INCLUDE)/umon/monlib.h: ../../shared/umon/monlib.h $(PROJECT_INCLUDE)/umon/$(dirstamp)
-	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/umon/monlib.h
-PREINSTALL_FILES += $(PROJECT_INCLUDE)/umon/monlib.h
-
-$(PROJECT_INCLUDE)/umon/tfs.h: ../../shared/umon/tfs.h $(PROJECT_INCLUDE)/umon/$(dirstamp)
-	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/umon/tfs.h
-PREINSTALL_FILES += $(PROJECT_INCLUDE)/umon/tfs.h
-
-$(PROJECT_INCLUDE)/rtems/$(dirstamp):
-	@$(MKDIR_P) $(PROJECT_INCLUDE)/rtems
-	@: > $(PROJECT_INCLUDE)/rtems/$(dirstamp)
-PREINSTALL_DIRS += $(PROJECT_INCLUDE)/rtems/$(dirstamp)
-
-$(PROJECT_INCLUDE)/rtems/umon.h: ../../shared/umon/umon.h $(PROJECT_INCLUDE)/rtems/$(dirstamp)
-	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/rtems/umon.h
-PREINSTALL_FILES += $(PROJECT_INCLUDE)/rtems/umon.h
-endif
 $(PROJECT_INCLUDE)/bspopts.h: include/bspopts.h $(PROJECT_INCLUDE)/$(dirstamp)
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bspopts.h
 PREINSTALL_FILES += $(PROJECT_INCLUDE)/bspopts.h

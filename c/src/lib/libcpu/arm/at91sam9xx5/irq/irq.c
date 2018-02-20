@@ -43,7 +43,7 @@ rtems_status_code bsp_interrupt_facility_initialize(void)
 
   for (i = 0; i < 32; ++i) {
     //AIC_SVR_REG(i<<2) = i;
-	AIC->AIC_SVR[i<<2] = i;
+	AIC->AIC_SVR[i] = i;
   }
 
   /* disable all interrupts */

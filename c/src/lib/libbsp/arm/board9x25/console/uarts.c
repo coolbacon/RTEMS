@@ -86,6 +86,7 @@ console_tbl Console_Configuration_Ports[] = {
     0,                 /* ulClock - NOT USED */
     0                  /* ulIntVector - NOT USED */
   },
+#if 0
 #if (ENABLE_UMON && ENABLE_UMON_CONSOLE)
   {
     "/dev/umon",       /* sDeviceName */
@@ -190,6 +191,7 @@ console_tbl Console_Configuration_Ports[] = {
     0,                 /* ulClock - NOT USED */
     0                  /* ulIntVector - NOT USED */
   }
+#endif
 #endif
 };
 

@@ -86,9 +86,18 @@
 #include "include/wdt.h"
 #else
 
-int at91sam9xx5_get_mainclk(void);
-int at91sam9xx5_get_slck(void);
-int at91sam9xx5_get_mck(void);
+#include <stdint.h>
+
+uint32_t at91sam9xx5_get_mainclk(void);
+uint32_t at91sam9xx5_get_slck(void);
+uint32_t at91sam9xx5_get_mck(void);
+
+extern void PMC_EnablePeripheral( uint32_t dwId ) ;
+extern void PMC_DisablePeripheral( uint32_t dwId ) ;
+extern void PMC_EnableAllPeripherals( void ) ;
+extern void PMC_DisableAllPeripherals( void ) ;
+extern uint32_t PMC_IsPeriphEnabled( uint32_t dwId ) ;
+
 
 #endif
 

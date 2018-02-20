@@ -6,7 +6,7 @@ baconxu@gmail.com
 
 #include <bsp.h>
 #include <bsp/irq-generic.h>
-#include <at91sam9xx5.h>
+#include <at91sam9xx5_lib.h>
 
 /* Function prototypes */
 static void fix_mac_addr(void);
@@ -88,6 +88,13 @@ static void fix_mac_addr(void)
 #endif
 }
 
+
+
+
+
+#define PINS_DBGU   {PIO_PA9A_DRXD | PIO_PA10A_DTXD, PIOA, ID_PIOA, PIO_PERIPH_A, PIO_DEFAULT}
+static const Pin pinsDbgu[] = {PINS_DBGU};
+
 /*
  *
  * NAME: bsp_usart_init - Function to setup the PIO in USART mode
@@ -104,8 +111,9 @@ static void fix_mac_addr(void)
  */
 void bsp_usart_init(void)
 {
-
-	
+  /* Configure PIO */
+  PIO_Configure(pinsDbgu, PIO_LISTSIZE(pinsDbgu));
+  
 #if 0
   /*
    * Configure shared pins for USARTs.
