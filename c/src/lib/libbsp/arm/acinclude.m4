@@ -6,6 +6,8 @@ AC_DEFUN([RTEMS_CHECK_BSPDIR],
     AC_CONFIG_SUBDIRS([altera-cyclone-v]);;
   beagle )
     AC_CONFIG_SUBDIRS([beagle]);;
+  board9x25 )
+    AC_CONFIG_SUBDIRS([board9x25]);;
   csb336 )
     AC_CONFIG_SUBDIRS([csb336]);;
   csb337 )

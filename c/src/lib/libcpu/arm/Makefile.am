@@ -55,6 +55,57 @@ pxa255_irq_rel_CPPFLAGS = $(AM_CPPFLAGS)
 pxa255_irq_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
 endif
 
+
+if at91sam9xx5
+include_HEADERS = at91sam9xx5/include/at91sam9xx5.h \
+	at91sam9xx5/include/bits.h \
+	at91sam9xx5/include/sam9g15.h \
+	at91sam9xx5/include/sam9g25.h \
+	at91sam9xx5/include/sam9g35.h \
+	at91sam9xx5/include/sam9x25.h
+
+## at91sam9xx5/clock
+noinst_PROGRAMS += at91sam9xx5/clock.rel
+at91sam9xx5_clock_rel_SOURCES = at91sam9xx5/clock/clock.c
+at91sam9xx5_clock_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9xx5_clock_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## at91sam9xx5/interrupt
+include_bsp_HEADERS += at91sam9xx5/irq/irq.h
+
+noinst_PROGRAMS += at91sam9xx5/irq.rel
+at91sam9xx5_irq_rel_SOURCES = at91sam9xx5/irq/irq.c at91sam9xx5/irq/irq.h
+at91sam9xx5_irq_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9xx5_irq_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## at91sam9xx5/dbgu
+noinst_PROGRAMS += at91sam9xx5/dbgu.rel
+at91sam9xx5_dbgu_rel_SOURCES = at91sam9xx5/dbgu/dbgu.c
+at91sam9xx5_dbgu_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9xx5_dbgu_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## at91sam9xx5/usart
+noinst_PROGRAMS += at91sam9xx5/usart.rel
+at91sam9xx5_usart_rel_SOURCES = at91sam9xx5/usart/usart.c
+at91sam9xx5_usart_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9xx5_usart_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## at91sam9xx5/timer
+noinst_PROGRAMS += at91sam9xx5/timer.rel
+at91sam9xx5_timer_rel_SOURCES = at91sam9xx5/timer/timer.c
+at91sam9xx5_timer_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9xx5_timer_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## at91sam9xx5/pmc
+noinst_PROGRAMS += at91sam9xx5/pmc.rel
+at91sam9xx5_pmc_rel_SOURCES = at91sam9xx5/pmc/pmc.c
+at91sam9xx5_pmc_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9xx5_pmc_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+endif
+
+
+
 if at91rm9200
 include_HEADERS = at91rm9200/include/at91rm9200.h at91rm9200/include/at91rm9200_dbgu.h \
     at91rm9200/include/at91rm9200_emac.h at91rm9200/include/at91rm9200_gpio.h \
