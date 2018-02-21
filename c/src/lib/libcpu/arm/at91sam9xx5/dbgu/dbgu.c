@@ -6,9 +6,6 @@ baconxu@gmail.com
 #include <rtems/libio.h>
 #include <termios.h>
 
-//#include <at91rm9200.h>
-//#include <at91rm9200_dbgu.h>
-//#include <at91rm9200_pmc.h>
 #include <at91sam9xx5.h>
 
 #include <rtems/bspIo.h>
@@ -85,12 +82,10 @@ static int dbgu_read(int minor)
 
     dbgu = (at91sam9xx5_dbgu_regs_t *)console_entry->ulCtrlPort1;
 
-    //if (!(dbgu->sr & DBGU_INT_RXRDY)) {
     if (!(dbgu->DBGU_SR & DBGU_SR_RXRDY)) {
         return -1;
     }
 
-    //c  = dbgu->rhr & 0xff;
     c = dbgu->DBGU_RHR & 0xff;
 
     return c;
@@ -120,7 +115,6 @@ static ssize_t dbgu_write(int minor, const char *buf, size_t len)
     for (i = 0; i < len; i++) {
         /* Wait for fifo to have room */
         while(1) {
-            //if (dbgu->sr & DBGU_INT_TXRDY) {
             if (dbgu->DBGU_SR & DBGU_SR_TXEMPTY) {
                 break;
             }
@@ -153,16 +147,7 @@ static void dbgu_init(int minor)
     }
 
     dbgu = (at91sam9xx5_dbgu_regs_t *)console_entry->ulCtrlPort1;
-
-    /* Clear error bits, and reset */
-    //dbgu->cr = (DBGU_CR_RSTSTA | DBGU_CR_RSTTX | DBGU_CR_RSTRX);
-
-    /* Clear pending interrupts */
-    //dbgu->idr = DBGU_INT_ALL;
-    //dbgu->imr = 0;
-
     /* Set port to no parity, no loopback */
-    //dbgu->mr = DBGU_MR_PAR_NONE | DBGU_MR_CHMODE_NORM;
     dbgu->DBGU_MR = DBGU_MR_CHMODE_NORM | DBGU_MR_PAR_NONE
                           | US_MR_CHRL_8_BIT;
 
@@ -173,11 +158,9 @@ static void dbgu_init(int minor)
     dbgu->DBGU_CR = DBGU_CR_RSTRX | DBGU_CR_RSTTX | DBGU_CR_RXDIS | DBGU_CR_TXDIS;
 	
     /* Set the baud rate */
-    //dbgu->brgr = (at91rm9200_get_mck() / 16) / BSP_get_baud();
 	dbgu->DBGU_BRGR = (at91sam9xx5_get_mck() / 16) / BSP_get_baud();
 
 	/* Enable the DBGU */
-    //dbgu->cr = (DBGU_CR_TXEN | DBGU_CR_RXEN);
     dbgu->DBGU_CR = DBGU_CR_RXEN | DBGU_CR_TXEN;
 }
 
