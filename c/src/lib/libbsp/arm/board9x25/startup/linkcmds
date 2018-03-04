@@ -1,7 +1,11 @@
+
+_sram_start = 0x00300000;
+_sram_length = 32768;
+
 MEMORY {
 	SDRAM : ORIGIN = 0x20000000, LENGTH = 128M - 16k
 	SDRAM_MMU : ORIGIN = 0x27ffc000, LENGTH = 16k
-	SRAM : ORIGIN = 0x00300000, LENGTH = 32k
+	SRAM : ORIGIN = _sram_start, LENGTH = _sram_length
 }
 
 REGION_ALIAS ("REGION_START", SDRAM);

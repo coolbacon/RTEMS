@@ -14,6 +14,7 @@
 #define CONFIGURE_INIT
 #include "system.h"
 
+
 const char rtems_test_name[] = "CLOCK TICK";
 
 /*

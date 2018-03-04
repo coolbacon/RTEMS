@@ -6,7 +6,7 @@ baconxu@gmail.com
 
 #include <bsp.h>
 #include <bsp/irq-generic.h>
-#include <at91sam9xx5_lib.h>
+#include <at91sam9xx5.h>
 
 /* Function prototypes */
 static void fix_mac_addr(void);

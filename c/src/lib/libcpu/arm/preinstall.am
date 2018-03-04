@@ -75,6 +75,26 @@ $(PROJECT_INCLUDE)/sam9x25.h: at91sam9xx5/include/sam9x25.h $(PROJECT_INCLUDE)/$
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/sam9x25.h
 PREINSTALL_FILES += $(PROJECT_INCLUDE)/sam9x25.h
 
+$(PROJECT_INCLUDE)/sam9xx5_dma_hardware_interface.h: at91sam9xx5/include/sam9xx5_dma_hardware_interface.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/sam9xx5_dma_hardware_interface.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/sam9xx5_dma_hardware_interface.h
+
+$(PROJECT_INCLUDE)/sam9xx5_dmac.h: at91sam9xx5/include/sam9xx5_dmac.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/sam9xx5_dmac.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/sam9xx5_dmac.h
+
+$(PROJECT_INCLUDE)/sam9xx5_dmad.h: at91sam9xx5/include/sam9xx5_dmad.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/sam9xx5_dmad.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/sam9xx5_dmad.h
+
+$(PROJECT_INCLUDE)/sam9xx5_pio.h: at91sam9xx5/include/sam9xx5_pio.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/sam9xx5_pio.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/sam9xx5_pio.h
+
+$(PROJECT_INCLUDE)/sam9xx5_pmc.h: at91sam9xx5/include/sam9xx5_pmc.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/sam9xx5_pmc.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/sam9xx5_pmc.h
+
 $(PROJECT_INCLUDE)/bsp/irq.h: at91sam9xx5/irq/irq.h $(PROJECT_INCLUDE)/bsp/$(dirstamp)
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bsp/irq.h
 PREINSTALL_FILES += $(PROJECT_INCLUDE)/bsp/irq.h

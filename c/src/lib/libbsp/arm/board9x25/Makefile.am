@@ -6,7 +6,7 @@ include_bspdir = $(includedir)/bsp
 
 dist_project_lib_DATA = bsp_specs
 
-include_HEADERS = include/bsp.h lib/pio.h lib/pio_it.h lib/trace.h lib/at91sam9xx5_lib.h
+include_HEADERS = include/bsp.h
 include_HEADERS += ../../shared/include/tm27.h
 
 include_bsp_HEADERS =
@@ -36,10 +36,10 @@ libbsp_a_SOURCES = ../../shared/bsplibc.c ../../shared/bsppost.c \
     ../../shared/bsppretaskinghook.c startup/bspstart.c \
     ../../shared/bspclean.c startup/bspreset.c \
     startup/memmap.c ../../shared/bootcard.c ../../shared/sbrk.c \
-    ../../shared/gnatinstallhandler.c \
-    lib/pio.c lib/pio_it.c
+    ../../shared/gnatinstallhandler.c
 libbsp_a_SOURCES += ../../shared/cpucounterread.c
 libbsp_a_SOURCES += ../../shared/cpucounterdiff.c
+
 # console
 libbsp_a_SOURCES += ../../shared/console.c console/uarts.c \
     ../../shared/console_select.c  ../../shared/console_control.c \
@@ -66,7 +66,7 @@ libbsp_a_CPPFLAGS += -I$(srcdir)/../shared/armv467ar-basic-cache
 if HAS_NETWORKING
 network_CPPFLAGS = -D__INSIDE_RTEMS_BSD_TCPIP_STACK__
 noinst_PROGRAMS += network.rel
-network_rel_SOURCES = network/network.c
+network_rel_SOURCES = network/network.c network/emac.c
 network_rel_CPPFLAGS = $(AM_CPPFLAGS) $(network_CPPFLAGS)
 network_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
 endif
@@ -77,7 +77,9 @@ libbsp_a_LIBADD = ../../../libcpu/@RTEMS_CPU@/shared/arm920.rel \
     ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/usart.rel \
     ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/timer.rel \
     ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/pmc.rel \
-    ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/irq.rel
+    ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/irq.rel \
+    ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/dma.rel \
+    ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/gpio.rel
 if HAS_NETWORKING
 libbsp_a_LIBADD += network.rel
 endif

@@ -62,7 +62,12 @@ include_HEADERS = at91sam9xx5/include/at91sam9xx5.h \
 	at91sam9xx5/include/sam9g15.h \
 	at91sam9xx5/include/sam9g25.h \
 	at91sam9xx5/include/sam9g35.h \
-	at91sam9xx5/include/sam9x25.h
+	at91sam9xx5/include/sam9x25.h \
+	at91sam9xx5/include/sam9xx5_dma_hardware_interface.h \
+	at91sam9xx5/include/sam9xx5_dmac.h \
+	at91sam9xx5/include/sam9xx5_dmad.h \
+	at91sam9xx5/include/sam9xx5_pio.h \
+	at91sam9xx5/include/sam9xx5_pmc.h
 
 ## at91sam9xx5/clock
 noinst_PROGRAMS += at91sam9xx5/clock.rel
@@ -102,6 +107,19 @@ at91sam9xx5_pmc_rel_SOURCES = at91sam9xx5/pmc/pmc.c
 at91sam9xx5_pmc_rel_CPPFLAGS = $(AM_CPPFLAGS)
 at91sam9xx5_pmc_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
 
+## at91sam9xx5/dma
+noinst_PROGRAMS += at91sam9xx5/dma.rel
+at91sam9xx5_dma_rel_SOURCES = at91sam9xx5/dma/dmac.c \
+    at91sam9xx5/dma/dmad.c \
+    at91sam9xx5/dma/dma_hardware_interface.c
+at91sam9xx5_dma_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9xx5_dma_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## at91sam9xx5/gpio
+noinst_PROGRAMS += at91sam9xx5/gpio.rel
+at91sam9xx5_gpio_rel_SOURCES = at91sam9xx5/gpio/pio.c
+at91sam9xx5_gpio_rel_CPPFLAGS = $(AM_CPPFLAGS)
+at91sam9xx5_gpio_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
 endif
 
 

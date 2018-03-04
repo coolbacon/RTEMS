@@ -41,22 +41,6 @@ $(PROJECT_INCLUDE)/bsp.h: include/bsp.h $(PROJECT_INCLUDE)/$(dirstamp)
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bsp.h
 PREINSTALL_FILES += $(PROJECT_INCLUDE)/bsp.h
 
-$(PROJECT_INCLUDE)/pio.h: lib/pio.h $(PROJECT_INCLUDE)/$(dirstamp)
-	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/pio.h
-PREINSTALL_FILES += $(PROJECT_INCLUDE)/pio.h
-
-$(PROJECT_INCLUDE)/pio_it.h: lib/pio_it.h $(PROJECT_INCLUDE)/$(dirstamp)
-	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/pio_it.h
-PREINSTALL_FILES += $(PROJECT_INCLUDE)/pio_it.h
-
-$(PROJECT_INCLUDE)/trace.h: lib/trace.h $(PROJECT_INCLUDE)/$(dirstamp)
-	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/trace.h
-PREINSTALL_FILES += $(PROJECT_INCLUDE)/trace.h
-
-$(PROJECT_INCLUDE)/at91sam9xx5_lib.h: lib/at91sam9xx5_lib.h $(PROJECT_INCLUDE)/$(dirstamp)
-	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/at91sam9xx5_lib.h
-PREINSTALL_FILES += $(PROJECT_INCLUDE)/at91sam9xx5_lib.h
-
 $(PROJECT_INCLUDE)/tm27.h: ../../shared/include/tm27.h $(PROJECT_INCLUDE)/$(dirstamp)
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/tm27.h
 PREINSTALL_FILES += $(PROJECT_INCLUDE)/tm27.h

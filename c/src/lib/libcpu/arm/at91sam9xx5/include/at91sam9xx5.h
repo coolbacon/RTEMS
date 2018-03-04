@@ -87,16 +87,11 @@
 #else
 
 #include <stdint.h>
-
-uint32_t at91sam9xx5_get_mainclk(void);
-uint32_t at91sam9xx5_get_slck(void);
-uint32_t at91sam9xx5_get_mck(void);
-
-extern void PMC_EnablePeripheral( uint32_t dwId ) ;
-extern void PMC_DisablePeripheral( uint32_t dwId ) ;
-extern void PMC_EnableAllPeripherals( void ) ;
-extern void PMC_DisableAllPeripherals( void ) ;
-extern uint32_t PMC_IsPeriphEnabled( uint32_t dwId ) ;
+#include <sam9xx5_pio.h>
+#include <sam9xx5_dma_hardware_interface.h>
+#include <sam9xx5_dmac.h>
+#include <sam9xx5_dmad.h>
+#include <sam9xx5_pmc.h>
 
 
 #endif
