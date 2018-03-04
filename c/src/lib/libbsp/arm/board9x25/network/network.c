@@ -454,7 +454,7 @@ void ETH_SetupTimeout(TEthDrv *pEthDrv, uint32_t toMax);
 static void EMAC_ResetTx(TEthDrv *pDrv);
 static void EMAC_ResetRx(TEthDrv *pDrv);
 static uint8_t EMAC_Receive(TEthDrv * pDrv, uint8_t *pFrame, uint32_t frameSize, uint32_t *pRcvSize);
-
+static uint8_t EMAC_RecPkt(TEthDrv * pDrv, struct ether_header *eh, struct mbuf *m);
 
 
 int rtems_at91sam9x25_emac_attach (
@@ -731,7 +731,7 @@ void at91sam9x25_emac_start(struct ifnet *ifp)
 
 	//EMAC_TransmitEnable(sc->ethDrv.pHw, 1);
     //EMAC_ReceiveEnable(sc->ethDrv.pHw, 1);
-	tr("at91sam9x25_emac_start\r\n");
+	//tr("at91sam9x25_emac_start\r\n");
 }
 
 void at91sam9x25_emac_stop (at91sam9x25_emac_softc_t *sc)
@@ -781,7 +781,7 @@ void at91sam9x25_emac_txDaemon (void *arg)
             at91sam9x25_emac_sendpacket (sc, ifp, m);
         }
 #else
-		printk("%s:(0x%x)\n\r", __func__, sc->ethDrv.pHw->EMAC_IMR);
+		//printk("%s:(0x%x)\n\r", __func__, sc->ethDrv.pHw->EMAC_IMR);
 		IF_DEQUEUE(&ifp->if_snd, m);
 		if (m)
 			at91sam9x25_emac_sendpacket(sc, ifp, m);
@@ -817,7 +817,8 @@ void at91sam9x25_emac_sendpacket (at91sam9x25_emac_softc_t *sc, struct ifnet *if
 
     /* free the mbuf chain we just copied */
     m_freem(m);
-
+	
+#if 0
 	{
 		int i;
 		tr("tx packet:\n\r");
@@ -827,6 +828,8 @@ void at91sam9x25_emac_sendpacket (at91sam9x25_emac_softc_t *sc, struct ifnet *if
 		}
 		tr("\n\r");
 	}
+#endif
+
 	/* Tx Callback */
 	/* Update TD status */
 	/* The buffer size defined is length of ethernet frame
@@ -836,7 +839,7 @@ void at91sam9x25_emac_sendpacket (at91sam9x25_emac_softc_t *sc, struct ifnet *if
 	
 	/* Now start to transmit if it is not already done */
 	EMAC_TransmissionStart(pHw);
-	tr("send a packet\n\r");
+	//tr("send a packet\n\r");
 } /* at91sam9x25_emac_sendpacket () */
 
 
@@ -846,7 +849,7 @@ void at91sam9x25_emac_rxDaemon(void *arg)
     at91sam9x25_emac_softc_t *sc = (at91sam9x25_emac_softc_t *)arg;
     struct ifnet *ifp = &sc->arpcom.ac_if;
     struct mbuf *m;
-    struct ether_header *eh;
+    struct ether_header eh;
     rtems_event_set events;
     uint32_t pktlen;
 	int rc = 0;
@@ -873,32 +876,36 @@ void at91sam9x25_emac_rxDaemon(void *arg)
             m->m_pkthdr.rcvif = ifp;
             m->m_nextpkt = 0;
 
-			rc = EMAC_Receive(&sc->ethDrv, m->m_ext.ext_buf, EMAC_FRAME_LENTGH_MAX, &pktlen);
+			//rc = EMAC_Receive(&sc->ethDrv, m->m_ext.ext_buf, EMAC_FRAME_LENTGH_MAX, &pktlen);
 			//tr("emac rc:%d\n\r", rc);
+
+			rc = EMAC_RecPkt(&sc->ethDrv, &eh, m);
 			
 			if (rc)
 			{
-				int i;
-				
 	            /* set the length of the mbuf */
-	            m->m_len = pktlen - (sizeof(struct ether_header) + 4);
-	            m->m_pkthdr.len = m->m_len;
+	            //m->m_len = pktlen - (sizeof(struct ether_header) + 4);
+	            //m->m_pkthdr.len = m->m_len;
 
 				
 
 	            /* strip off the ethernet header from the mbuf */
 	            /* but save the pointer to it */
-	            eh = mtod (m, struct ether_header *);
-
-				tr("rx pkt:\n\r");
-				for (i = 0; i < pktlen; i++)
-				{
-					tr("%02X  ", ((uint8_t *)m->m_data)[i]);
-				}
-				tr("\n\r");
+	            //eh = mtod (m, struct ether_header *);
+#if 0
 				
+				{//this code for debugging.
+					int i;
+					tr("rx pkt:\n\r");
+					for (i = 0; i < pktlen; i++)
+					{
+						tr("%02X  ", ((uint8_t *)m->m_data)[i]);
+					}
+					tr("\n\r");
+	            }
+#endif
 	            //memcpy(&eh, m->m_data, sizeof(struct ether_header));
-	            m->m_data += sizeof(struct ether_header);
+	            //m->m_data += sizeof(struct ether_header);
 				//memmove(m->m_data, m->m_data + sizeof(struct ether_header), m->m_len);
 
 	            /* increment the buffer index */
@@ -908,7 +915,7 @@ void at91sam9x25_emac_rxDaemon(void *arg)
 	            }
 
 	            /* give all this stuff to the stack */
-	            ether_input(ifp, eh, m);
+	            ether_input(ifp, &eh, m);
 			}
 			else
 			{
@@ -1033,7 +1040,6 @@ static void at91sam9x25_emac_isr (void * arg)
 		/* Clear status */
 		EMAC_ClearRxStatus(pHw, rxStatusFlag);
 
-		printk("]");
 		rtems_bsdnet_event_send (sc->rxDaemonTid, START_RECEIVE_EVENT);
 	}
 	
@@ -1077,7 +1083,6 @@ static void at91sam9x25_emac_isr (void * arg)
         /* Clear status */
         EMAC_ClearTxStatus(pHw, txStatusFlag);
 
-		printk("}");
 		rtems_bsdnet_event_send (softc.txDaemonTid, START_TRANSMIT_EVENT);
     }
 	
@@ -1996,6 +2001,129 @@ uint8_t EMAC_Receive(TEthDrv * pDrv, uint8_t *pFrame, uint32_t frameSize, uint32
     
     return 0;
 }
+
+uint8_t EMAC_RecPkt(TEthDrv * pDrv, struct ether_header *eh, struct mbuf *m)
+{
+    uint16_t bufferLength;
+    uint32_t tmpFrameSize=0;
+    uint8_t  *pTmpFrame=0;
+    uint32_t tmpIdx = pDrv->wRxI;
+    volatile sEmacRxDescriptor *pRxTd = &pDrv->pRxD[pDrv->wRxI];
+    char isFrame = 0;
+	uint32_t rcvSize;
+	uint32_t frameSize = EMAC_FRAME_LENTGH_MAX;
+
+    if (eh == NULL || m == NULL) return 0;
+
+    /* Set the default return value */
+    rcvSize = 0;
+
+	//m->m_ext.ext_buf
+
+    /* Process received RxTd */
+    while ((pRxTd->addr.val & EMAC_RXD_bmOWNERSHIP) == EMAC_RXD_bmOWNERSHIP)
+    {
+        /* A start of frame has been received, discard previous fragments */
+        if ((pRxTd->status.val & EMAC_RXD_bmSOF) == EMAC_RXD_bmSOF)
+        {
+            /* Skip previous fragment */
+            while (tmpIdx != pDrv->wRxI)
+            {
+                pRxTd = &pDrv->pRxD[pDrv->wRxI];
+                pRxTd->addr.val &= ~(EMAC_RXD_bmOWNERSHIP);
+                CIRC_INC(pDrv->wRxI, pDrv->wRxListSize);
+            }
+            /* Reset the temporary frame pointer */
+            pTmpFrame = (uint8_t *)m->m_ext.ext_buf;
+            tmpFrameSize = 0;
+            /* Start to gather buffers in a frame */
+            isFrame = 1;
+        }
+
+        /* Increment the pointer */
+        CIRC_INC(tmpIdx, pDrv->wRxListSize);
+
+        /* Copy data in the frame buffer */
+        if (isFrame)
+        {
+            if (tmpIdx == pDrv->wRxI)
+            {
+                tr("no EOF (Invalid of buffers too small)\n\r");
+                do
+                {
+
+                    pRxTd = &pDrv->pRxD[pDrv->wRxI];
+                    pRxTd->addr.val &= ~(EMAC_RXD_bmOWNERSHIP);
+                    CIRC_INC(pDrv->wRxI, pDrv->wRxListSize);
+                } while(tmpIdx != pDrv->wRxI);
+                return 0;
+            }
+			
+            /* Copy the buffer into the application frame */
+            bufferLength = EMAC_RX_UNITSIZE;
+            if ((tmpFrameSize + bufferLength) > frameSize)
+            {
+                bufferLength = frameSize - tmpFrameSize;
+            }
+
+			if (tmpFrameSize == 0)
+			{
+	            memcpy(eh, (void*)(pRxTd->addr.val & EMAC_RXD_ADDR_MASK), sizeof(struct ether_header));
+				memcpy(pTmpFrame, (uint8_t *)(pRxTd->addr.val & EMAC_RXD_ADDR_MASK) + sizeof(struct ether_header), 
+					bufferLength - sizeof(struct ether_header));
+				pTmpFrame += bufferLength - sizeof(struct ether_header);
+				tmpFrameSize += bufferLength - sizeof(struct ether_header);
+			}
+			else
+			{
+				memcpy(pTmpFrame, (void*)(pRxTd->addr.val & EMAC_RXD_ADDR_MASK), bufferLength);
+				pTmpFrame += bufferLength;
+				tmpFrameSize += bufferLength;
+			}
+
+            /* An end of frame has been received, return the data */
+            if ((pRxTd->status.val & EMAC_RXD_bmEOF) == EMAC_RXD_bmEOF)
+            {
+                /* Frame size from the EMAC */
+                rcvSize = (pRxTd->status.val & EMAC_RXD_LEN_MASK);
+                
+                //tr("packet %d-%d (%d)\n\r", pDrv->wRxI, tmpIdx, *pRcvSize);
+                /* All data have been copied in the application frame buffer => release TD */
+                while (pDrv->wRxI != tmpIdx)
+                {
+                    pRxTd = &pDrv->pRxD[pDrv->wRxI];
+                    pRxTd->addr.val &= ~(EMAC_RXD_bmOWNERSHIP);
+                    CIRC_INC(pDrv->wRxI, pDrv->wRxListSize);
+                }
+
+                /* Application frame buffer is too small all data have not been copied */
+                if (tmpFrameSize < rcvSize)
+                {
+                    tr("size req %u size allocated %u\n\r", rcvSize, frameSize);
+
+                    return 0;
+                }
+				
+				m->m_len = rcvSize - sizeof(struct ether_header);
+				m->m_pkthdr.len = m->m_len;
+
+                return 1;
+            }
+        }
+        /* SOF has not been detected, skip the fragment */
+        else
+        {
+           pRxTd->addr.val &= ~(EMAC_RXD_bmOWNERSHIP);
+           pDrv->wRxI = tmpIdx;
+        }
+       
+        /* Process the next buffer */
+        pRxTd = &pDrv->pRxD[tmpIdx];
+    }
+    
+    return 0;
+}
+
 
 
 
