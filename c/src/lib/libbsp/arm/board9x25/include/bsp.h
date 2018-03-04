@@ -60,7 +60,10 @@ extern struct rtems_bsdnet_ifconfig *config;
 
 int rtems_at91sam9x25_emac_attach(struct rtems_bsdnet_ifconfig *config, int attching);
 
-#define RTEMS_BSP_NETWORK_DRIVER_NAME	"eth0"
+
+#define RTEMS_BSP_NETWORK_DRIVER0_NAME  "eth0"
+#define RTEMS_BSP_NETWORK_DRIVER1_NAME  "eth1"
+#define RTEMS_BSP_NETWORK_DRIVER_NAME	RTEMS_BSP_NETWORK_DRIVER0_NAME
 #define RTEMS_BSP_NETWORK_DRIVER_ATTACH	rtems_at91sam9x25_emac_attach
 
 /** @} */

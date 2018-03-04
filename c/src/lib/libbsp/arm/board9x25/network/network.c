@@ -148,6 +148,8 @@ EMAC1 PINS Definitions
 
 /** The PINs for EMAC */
 static const Pin gEmac0Pins[] = {PINS_EMAC0_RMII};
+static const Pin gEmac1Pins[] = {PINS_EMAC1_RMII};
+
 
 
 #define tr(...)			printk(__VA_ARGS__)
@@ -361,7 +363,8 @@ typedef struct
     unsigned long                   txRawWait;
 } at91sam9x25_emac_softc_t;
 
-static at91sam9x25_emac_softc_t softc;
+static at91sam9x25_emac_softc_t softc0;
+static at91sam9x25_emac_softc_t softc1;
 
 /*----------------------------------------------------------------------------
  *         Definitions
@@ -466,6 +469,7 @@ int rtems_at91sam9x25_emac_attach (
     int mtu;
     int unitnumber;
     char *unitname;
+	at91sam9x25_emac_softc_t *sc;
 
     /*
      * Parse driver name
@@ -476,54 +480,52 @@ int rtems_at91sam9x25_emac_attach (
     /*
      * Is driver free?
      */
-    if (unitnumber != 0) {
+    if (unitnumber > 1) {
         printk ("Bad at91sam9x25 EMAC unit number.\n");
         return 0;
     }
-    ifp = &softc.arpcom.ac_if;
+
+	if (unitnumber == 1)
+	{
+		sc = &softc1;
+		sc->ethDrv.bId = ID_EMAC1;
+	}
+	else
+	{
+		sc = &softc0;
+		sc->ethDrv.bId = ID_EMAC0;
+	}
+	
+    ifp = &sc->arpcom.ac_if;
     if (ifp->if_softc != NULL) {
         printk ("Driver already in use.\n");
         return 0;
     }
 
+
     /*
      *  zero out the control structure
      */
-    memset( &softc, 0, sizeof(softc) );
+    memset( sc, 0, sizeof(at91sam9x25_emac_softc_t) );
 
-
-    /* get the MAC address from the chip */
-    softc.arpcom.ac_enaddr[0] = 0x00;
-    softc.arpcom.ac_enaddr[1] = 0x12;
-    softc.arpcom.ac_enaddr[2] = 0x34;
-    softc.arpcom.ac_enaddr[3] = 0x56;
-    softc.arpcom.ac_enaddr[4] = 0x78;
-    softc.arpcom.ac_enaddr[5] = 0x9a;
-	#if 0
-	if (chip == NULL)
+	if (unitnumber == 1)
 	{
-		softc.ethDrv.bId = ID_EMAC0;
+		sc->ethDrv.bId = ID_EMAC1;
 	}
 	else
 	{
-		if (*(uint32_t *)chip == 0)
-			softc.ethDrv.bId = ID_EMAC0;
-		else
-			softc.ethDrv.bId = ID_EMAC1;
+		sc->ethDrv.bId = ID_EMAC0;
 	}
-	#endif
-	softc.ethDrv.bId = ID_EMAC0;
-	printk("chip id:%u sizeof(struct ether_header):%d\n\r", softc.ethDrv.bId, sizeof(struct ether_header));
-    #if 0
-      printk( "MAC=%02x:%02x:%02x:%02x:%02x:%02x\n",
-        softc.arpcom.ac_enaddr[0],
-        softc.arpcom.ac_enaddr[1],
-        softc.arpcom.ac_enaddr[2],
-        softc.arpcom.ac_enaddr[3],
-        softc.arpcom.ac_enaddr[4],
-        softc.arpcom.ac_enaddr[5]
-      );
-    #endif
+	
+
+
+    /* get the MAC address from the chip */
+    sc->arpcom.ac_enaddr[0] = 0x00 + unitnumber;
+    sc->arpcom.ac_enaddr[1] = 0x12;
+    sc->arpcom.ac_enaddr[2] = 0x34;
+    sc->arpcom.ac_enaddr[3] = 0x56;
+    sc->arpcom.ac_enaddr[4] = 0x78;
+    sc->arpcom.ac_enaddr[5] = 0x9a;
 
     if (config->mtu) {
         mtu = config->mtu;
@@ -531,12 +533,12 @@ int rtems_at91sam9x25_emac_attach (
         mtu = ETHERMTU;
     }
 
-    softc.acceptBroadcast = !config->ignore_broadcast;
+    sc->acceptBroadcast = !config->ignore_broadcast;
 
     /*
      * Set up network interface values
      */
-    ifp->if_softc = &softc;
+    ifp->if_softc = sc;
     ifp->if_unit = unitnumber;
     ifp->if_name = unitname;
     ifp->if_mtu = mtu;
@@ -549,9 +551,9 @@ int rtems_at91sam9x25_emac_attach (
         ifp->if_snd.ifq_maxlen = ifqmaxlen;
     }
 
-    softc.rx_buf_idx = 0;
+    sc->rx_buf_idx = 0;
 
-
+	/*check memory*/
 	get_e1_rxbuf_addr();
 
     /*
@@ -652,7 +654,7 @@ void at91sam9x25_emac_init(void *arg)
                     | EMAC_IER_HRESP
                     | EMAC_IER_PFR
                     | EMAC_IER_PTZ);
-	printk("%s:(0x%x)\n\r", __func__, emac->EMAC_IMR);
+	tr("%s:(0x%x)\n\r", __func__, emac->EMAC_IMR);
 } /* at91sam9x25_emac_init() */
 
 void  at91sam9x25_emac_init_hw(at91sam9x25_emac_softc_t *sc)
@@ -667,19 +669,7 @@ void  at91sam9x25_emac_init_hw(at91sam9x25_emac_softc_t *sc)
 	    /* Enable the clock to the EMAC */		
 	    PMC_EnablePeripheral(sc->ethDrv.bId);
 		tr("emac0 status: 0x%x\n\r", PMC_IsPeriphEnabled(sc->ethDrv.bId));
-		/*
-		EMAC_DisableIt(&sc->ethDrv,    
-					  EMAC_IER_RXUBR
-                    | EMAC_IER_TUND
-                    | EMAC_IER_RLE
-                    | EMAC_IER_TXERR
-                    | EMAC_IER_TCOMP
-                    | EMAC_IER_RCOMP
-                    | EMAC_IER_ROVR
-                    | EMAC_IER_HRESP
-                    | EMAC_IER_PFR
-                    | EMAC_IER_PTZ);
-        */
+
 		sc->ethDrv.pHw = EMAC0;
 		sc->ethDrv.pRxD = get_e0_rxbuf_hdrs_addr();
 		sc->ethDrv.pTxD = get_e0_txbuf_hdrs_addr();
@@ -690,7 +680,7 @@ void  at91sam9x25_emac_init_hw(at91sam9x25_emac_softc_t *sc)
 		sc->ethDrv.pTxBuffer = get_e0_txbuf_addr();
 		sc->ethDrv.wTxListSize = NUM_TXBDS;
 
-		tr("ADDR:0x%x, 0x%x, 0x%x, 0x%x\n\r", sc->ethDrv.pRxD, sc->ethDrv.pTxD, sc->ethDrv.pRxBuffer, sc->ethDrv.pTxBuffer);
+		tr("ADDR EMAC0:0x%x, 0x%x, 0x%x, 0x%x\n\r", sc->ethDrv.pRxD, sc->ethDrv.pTxD, sc->ethDrv.pRxBuffer, sc->ethDrv.pTxBuffer);
 
 
 		/* Configure shared pins for Ethernet, not GPIO */
@@ -699,6 +689,25 @@ void  at91sam9x25_emac_init_hw(at91sam9x25_emac_softc_t *sc)
 	}
 	else
 	{
+		/* Enable the clock to the EMAC */		
+	    PMC_EnablePeripheral(sc->ethDrv.bId);
+		tr("emac1 status: 0x%x\n\r", PMC_IsPeriphEnabled(sc->ethDrv.bId));
+
+		sc->ethDrv.pHw = EMAC1;
+		sc->ethDrv.pRxD = get_e1_rxbuf_hdrs_addr();
+		sc->ethDrv.pTxD = get_e1_txbuf_hdrs_addr();
+		
+		sc->ethDrv.pRxBuffer = get_e1_rxbuf_addr();
+		sc->ethDrv.wRxListSize = NUM_RXBDS;
+		
+		sc->ethDrv.pTxBuffer = get_e1_txbuf_addr();
+		sc->ethDrv.wTxListSize = NUM_TXBDS;
+
+		tr("ADDR EMAC1:0x%x, 0x%x, 0x%x, 0x%x\n\r", sc->ethDrv.pRxD, sc->ethDrv.pTxD, sc->ethDrv.pRxBuffer, sc->ethDrv.pTxBuffer);
+
+		/* Configure shared pins for Ethernet, not GPIO */
+		/* Configure PIO */
+	  	PIO_Configure(gEmac1Pins, PIO_LISTSIZE(gEmac1Pins));
 	}
 	
 
@@ -933,10 +942,10 @@ void at91sam9x25_emac_stats (at91sam9x25_emac_softc_t *sc)
     printf (" Total Interrupts:%-8lu",          sc->Interrupts);
     printf ("    Rx Interrupts:%-8lu",          sc->rxInterrupts);
     printf ("            Giant:%-8lu",          sc->rxGiant);
-    printf ("        Non-octet:%-8lu\n",                sc->rxNonOctet);
+    printf ("        Non-octet:%-8lu\n",        sc->rxNonOctet);
     printf ("          Bad CRC:%-8lu",          sc->rxBadCRC);
     printf ("        Collision:%-8lu",          sc->rxCollision);
-    printf ("           Missed:%-8lu\n",                sc->rxMissed);
+    printf ("           Missed:%-8lu\n",        sc->rxMissed);
 
     printf (    "    Tx Interrupts:%-8lu",      sc->txInterrupts);
     printf (  "           Deferred:%-8lu",      sc->txDeferred);
@@ -1083,7 +1092,7 @@ static void at91sam9x25_emac_isr (void * arg)
         /* Clear status */
         EMAC_ClearTxStatus(pHw, txStatusFlag);
 
-		rtems_bsdnet_event_send (softc.txDaemonTid, START_TRANSMIT_EVENT);
+		rtems_bsdnet_event_send (sc->txDaemonTid, START_TRANSMIT_EVENT);
     }
 	
 
