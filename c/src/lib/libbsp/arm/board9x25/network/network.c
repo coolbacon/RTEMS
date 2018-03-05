@@ -57,7 +57,7 @@ static void at91sam9x25_emac_isr (void *);
 #define EMAC_TX_UNITSIZE TX_BUFFER_SIZE
 #define EMAC_RX_UNITSIZE RX_BUFFER_SIZE
 
-#define ETH_PHY_RETRY_MAX 		10000
+#define ETH_PHY_RETRY_MAX 		(10000 * 100)
 /** EMAC PHY address */
 #define ETH_EMAC_PHY_ADDR     	0x00
 
@@ -1596,7 +1596,7 @@ uint8_t ETH_AutoNegotiate(TEthDrv *pEthDrv, uint8_t rmiiMode)
     pDrv->RMII = rmiiMode;
 
     phyAddress = pDrv->phyAddress;
-    retryMax = pDrv->retryMax * 100;
+    retryMax = pDrv->retryMax;
 
     EMAC_ManagementEnable(pHw, 1);
 
@@ -1703,6 +1703,7 @@ uint8_t ETH_AutoNegotiate(TEthDrv *pEthDrv, uint8_t rmiiMode)
                 rc = 0;
                 goto AutoNegotiateExit;
             }
+			__asm__ __volatile__ ("nop");
         }
     }
 
