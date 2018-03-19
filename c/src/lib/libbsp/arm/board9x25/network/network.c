@@ -57,7 +57,7 @@ static void at91sam9x25_emac_isr (void *);
 #define EMAC_TX_UNITSIZE TX_BUFFER_SIZE
 #define EMAC_RX_UNITSIZE RX_BUFFER_SIZE
 
-#define ETH_PHY_RETRY_MAX 		(10000 * 100)
+#define ETH_PHY_RETRY_MAX 		(10000 * 20)
 /** EMAC PHY address */
 #define ETH_EMAC_PHY_ADDR     	0x00
 
@@ -2107,7 +2107,7 @@ uint8_t EMAC_RecPkt(TEthDrv * pDrv, struct ether_header *eh, struct mbuf *m)
                 }
 
                 /* Application frame buffer is too small all data have not been copied */
-                if (tmpFrameSize < rcvSize)
+                if ((tmpFrameSize + sizeof(struct ether_header)) < rcvSize)
                 {
                     tr("size req %u size allocated %u\n\r", rcvSize, frameSize);
 

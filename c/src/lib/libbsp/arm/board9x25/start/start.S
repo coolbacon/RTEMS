@@ -20,6 +20,7 @@ baconxu@gmail.com
 .equ PSR_T,              0x20
 
 .text
+.section	".bsp_start_text", "ax"
 .globl  _start
 _start:
         /*
@@ -139,3 +140,6 @@ FIQ_Handler:            b       FIQ_Handler
 .globl Abort_Handler
 .globl IRQ_Handler
 .globl FIQ_Handler
+
+
+
