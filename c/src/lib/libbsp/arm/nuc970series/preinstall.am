@@ -73,8 +73,3 @@ $(PROJECT_INCLUDE)/bsp/irq-info.h: ../../shared/include/irq-info.h $(PROJECT_INC
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bsp/irq-info.h
 PREINSTALL_FILES += $(PROJECT_INCLUDE)/bsp/irq-info.h
 
-if HAS_NETWORKING
-$(PROJECT_INCLUDE)/bsp/emac.h: network/emac.h $(PROJECT_INCLUDE)/bsp/$(dirstamp)
-	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bsp/emac.h
-PREINSTALL_FILES += $(PROJECT_INCLUDE)/bsp/emac.h
-endif

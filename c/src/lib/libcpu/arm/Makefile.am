@@ -123,6 +123,45 @@ at91sam9xx5_gpio_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
 endif
 
 
+if nuc970
+include_HEADERS = nuc970/include/nuc970.h
+
+## nuc970/clock
+noinst_PROGRAMS += nuc970/clock.rel
+nuc970_clock_rel_SOURCES = nuc970/clock/clock.c
+nuc970_clock_rel_CPPFLAGS = $(AM_CPPFLAGS)
+nuc970_clock_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## nuc970/interrupt
+include_bsp_HEADERS += nuc970/irq/irq.h
+
+noinst_PROGRAMS += nuc970/irq.rel
+nuc970_irq_rel_SOURCES = nuc970/irq/irq.c nuc970/irq/irq.h
+nuc970_irq_rel_CPPFLAGS = $(AM_CPPFLAGS)
+nuc970_irq_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## nuc970/dbgu
+noinst_PROGRAMS += nuc970/dbgu.rel
+nuc970_dbgu_rel_SOURCES = nuc970/dbgu/dbgu.c
+nuc970_dbgu_rel_CPPFLAGS = $(AM_CPPFLAGS)
+nuc970_dbgu_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## nuc970/timer
+noinst_PROGRAMS += nuc970/timer.rel
+nuc970_timer_rel_SOURCES = nuc970/timer/timer.c
+nuc970_timer_rel_CPPFLAGS = $(AM_CPPFLAGS)
+nuc970_timer_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+
+## nuc970/pmc
+include_bsp_HEADERS += nuc970/pmc/pmc.h
+
+noinst_PROGRAMS += nuc970/pmc.rel
+nuc970_pmc_rel_SOURCES = nuc970/pmc/pmc.c nuc970/pmc/pmc.h
+nuc970_pmc_rel_CPPFLAGS = $(AM_CPPFLAGS)
+nuc970_pmc_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+endif
+
+
 
 if at91rm9200
 include_HEADERS = at91rm9200/include/at91rm9200.h at91rm9200/include/at91rm9200_dbgu.h \

@@ -64,26 +64,28 @@ libbsp_a_SOURCES += ../shared/armv467ar-basic-cache/cache_.h
 libbsp_a_CPPFLAGS += -I$(srcdir)/../shared/armv467ar-basic-cache
 
 #hsmci0
-libbsp_a_SOURCES += hsmci/hsmci.c
+#libbsp_a_SOURCES += hsmci/hsmci.c
 
 if HAS_NETWORKING
 network_CPPFLAGS = -D__INSIDE_RTEMS_BSD_TCPIP_STACK__
 noinst_PROGRAMS += network.rel
-include_bsp_HEADERS += network/emac.h
-network_rel_SOURCES = network/network.c network/emac.c
-network_rel_CPPFLAGS = $(AM_CPPFLAGS) $(network_CPPFLAGS)
-network_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+#include_bsp_HEADERS += network/emac.h
+#network_rel_SOURCES = network/network.c network/emac.c
+#network_rel_CPPFLAGS = $(AM_CPPFLAGS) $(network_CPPFLAGS)
+#network_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
 endif
 
 libbsp_a_LIBADD = ../../../libcpu/@RTEMS_CPU@/shared/arm920.rel \
     ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/clock.rel \
     ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/dbgu.rel \
-    ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/usart.rel \
     ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/timer.rel \
     ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/pmc.rel \
-    ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/irq.rel \
-    ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/dma.rel \
-    ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/gpio.rel
+    ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/irq.rel
+
+#    ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/dma.reln
+#   ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/gpio.rel
+#   ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/usart.rel
+
 if HAS_NETWORKING
 libbsp_a_LIBADD += network.rel
 endif

@@ -99,6 +99,19 @@ $(PROJECT_INCLUDE)/bsp/irq.h: at91sam9xx5/irq/irq.h $(PROJECT_INCLUDE)/bsp/$(dir
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bsp/irq.h
 PREINSTALL_FILES += $(PROJECT_INCLUDE)/bsp/irq.h
 endif
+if nuc970
+$(PROJECT_INCLUDE)/nuc970.h: nuc970/include/nuc970.h $(PROJECT_INCLUDE)/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/nuc970.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/nuc970.h
+
+$(PROJECT_INCLUDE)/bsp/irq.h: nuc970/irq/irq.h $(PROJECT_INCLUDE)/bsp/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bsp/irq.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/bsp/irq.h
+
+$(PROJECT_INCLUDE)/bsp/pmc.h: nuc970/pmc/pmc.h $(PROJECT_INCLUDE)/bsp/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bsp/pmc.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/bsp/pmc.h
+endif
 if at91rm9200
 $(PROJECT_INCLUDE)/at91rm9200.h: at91rm9200/include/at91rm9200.h $(PROJECT_INCLUDE)/$(dirstamp)
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/at91rm9200.h
