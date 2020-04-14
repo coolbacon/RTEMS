@@ -69,10 +69,9 @@ libbsp_a_CPPFLAGS += -I$(srcdir)/../shared/armv467ar-basic-cache
 if HAS_NETWORKING
 network_CPPFLAGS = -D__INSIDE_RTEMS_BSD_TCPIP_STACK__
 noinst_PROGRAMS += network.rel
-#include_bsp_HEADERS += network/emac.h
-#network_rel_SOURCES = network/network.c network/emac.c
-#network_rel_CPPFLAGS = $(AM_CPPFLAGS) $(network_CPPFLAGS)
-#network_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+network_rel_SOURCES = network/network.c
+network_rel_CPPFLAGS = $(AM_CPPFLAGS) $(network_CPPFLAGS)
+network_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
 endif
 
 libbsp_a_LIBADD = ../../../libcpu/@RTEMS_CPU@/shared/arm920.rel \
@@ -81,10 +80,6 @@ libbsp_a_LIBADD = ../../../libcpu/@RTEMS_CPU@/shared/arm920.rel \
     ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/timer.rel \
     ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/pmc.rel \
     ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/irq.rel
-
-#    ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/dma.reln
-#   ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/gpio.rel
-#   ../../../libcpu/@RTEMS_CPU@/@RTEMS_CPU_MODEL@/usart.rel
 
 if HAS_NETWORKING
 libbsp_a_LIBADD += network.rel

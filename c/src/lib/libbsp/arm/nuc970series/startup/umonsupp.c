@@ -1,5 +1,5 @@
 /*
-at91sam9xx5
+nuc977
 baconxu@gmail.com
  */
 

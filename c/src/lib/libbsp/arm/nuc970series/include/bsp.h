@@ -1,13 +1,13 @@
 /**
 
-at91sam9x25
+nuc977
 baconxu@gmail.com
 
  */
 
  
-#ifndef LIBBSP_ARM_BOARD9X25_BSP_H
-#define LIBBSP_ARM_BOARD9X25_BSP_H
+#ifndef LIBBSP_ARM_NUC970_BSP_H
+#define LIBBSP_ARM_NUC970_BSP_H
 
 #include <bspopts.h>
 #include <bsp/default-initial-extension.h>
