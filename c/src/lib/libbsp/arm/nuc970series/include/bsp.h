@@ -49,11 +49,11 @@ extern struct rtems_bsdnet_ifconfig *config;
 
 /* Change these to match your board */
 
-///int rtems_at91sam9x25_emac_attach(struct rtems_bsdnet_ifconfig *config, int attching);
+int rtems_nuc970_emac_attach(struct rtems_bsdnet_ifconfig *config, int attching);
 
 
 #define RTEMS_BSP_NETWORK_DRIVER_NAME  "eth0"
-//#define RTEMS_BSP_NETWORK_DRIVER_ATTACH	rtems_at91sam9x25_emac_attach
+#define RTEMS_BSP_NETWORK_DRIVER_ATTACH	rtems_nuc970_emac_attach
 
 /** @} */
 

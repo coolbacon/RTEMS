@@ -95,7 +95,7 @@ bacon@rtems.cn
 #define ADVERTISE_LPACK         0x4000  /* Ack link partners response  */
 #define ADVERTISE_NPAGE         0x8000  /* Next page bit               */
 
-#define RX_DESCRIPTOR_NUM 10    // Max Number of Rx Frame Descriptors
+#define RX_DESCRIPTOR_NUM 8    // Max Number of Rx Frame Descriptors
 #define TX_DESCRIPTOR_NUM 1    	// Max number of Tx Frame Descriptors
 #define ETH_PKT_BUFF_SIZE	1600
 #define PACKET_BUFFER_SIZE  1520
@@ -176,9 +176,9 @@ typedef struct
     rtems_id                        rxDaemonTid;
     rtems_id                        txDaemonTid;
 
-	struct eth_descriptor			*cur_tx_desc_ptr;
-	struct eth_descriptor			*cur_rx_desc_ptr;
-	struct eth_descriptor			*fin_tx_desc_ptr;
+	volatile struct eth_descriptor			*cur_tx_desc_ptr;
+	volatile struct eth_descriptor			*cur_rx_desc_ptr;
+	volatile struct eth_descriptor			*fin_tx_desc_ptr;
 
  
     /*
@@ -211,8 +211,8 @@ static nuc970_emac_softc_t softc[NUM_NUC970_MACS];
 
 static struct eth_descriptor rx_desc[RX_DESCRIPTOR_NUM] __ALIGNED(32);
 static struct eth_descriptor tx_desc[TX_DESCRIPTOR_NUM] __ALIGNED(32);
-static uint8_t eth_rx_buff[RX_DESCRIPTOR_NUM * NUM_NUC970_MACS][ETH_PKT_BUFF_SIZE] __ALIGNED(32);
-static uint8_t eth_tx_buff[TX_DESCRIPTOR_NUM * NUM_NUC970_MACS][ETH_PKT_BUFF_SIZE] __ALIGNED(32);
+static uint8_t eth_rx_buff[RX_DESCRIPTOR_NUM * NUM_NUC970_MACS][PACKET_BUFFER_SIZE] __ALIGNED(32);
+static uint8_t eth_tx_buff[TX_DESCRIPTOR_NUM * NUM_NUC970_MACS][PACKET_BUFFER_SIZE] __ALIGNED(32);
 
 
 static void mdio_write(uint8_t addr, uint8_t reg, uint16_t val);
@@ -257,10 +257,8 @@ int rtems_nuc970_emac_attach (
         return 0;
     }
 
-	if (unitnumber == 1)
-	{
-		sc = &softc[0];
-	}
+
+	sc = &softc[0];
 	
     ifp = &sc->arpcom.ac_if;
     if (ifp->if_softc != NULL) {
@@ -319,8 +317,15 @@ void nuc970_emac_start(struct ifnet *ifp)
 {
     nuc970_emac_softc_t *sc = ifp->if_softc;
 
+	/*
+	enable tx, rx
+	*/
+	outpw(REG_EMAC0_MCMDR, inpw(REG_EMAC0_MCMDR) | 0x101);
+
     rtems_bsdnet_event_send(sc->txDaemonTid, START_TRANSMIT_EVENT);
     ifp->if_flags |= IFF_OACTIVE;
+
+	//ETH0_TRIGGER_TX();
 }
 
 void nuc970_emac_stop (nuc970_emac_softc_t *sc)
@@ -349,6 +354,9 @@ void nuc970_emac_init(void *arg)
      * gets called multiple times
      */
     if (sc->txDaemonTid == 0) {
+        // Reset MAC
+    	outpw(REG_EMAC0_MCMDR, 0x1000000);
+        outpw(REG_CLK_HCLKEN, inpw(REG_CLK_HCLKEN) & ~(1 << 16));            // EMAC0 clk
         /* Set up EMAC hardware */
         outpw(REG_CLK_HCLKEN, inpw(REG_CLK_HCLKEN) | (1 << 16));            // EMAC0 clk
 		outpw(REG_CLK_DIVCTL8, (inpw(REG_CLK_DIVCTL8) & ~0xFF) | 0xA0);     // MDC clk divider
@@ -401,7 +409,7 @@ void nuc970_emac_init(void *arg)
 	/*
 	enable tx, rx
 	*/
-	outpw(REG_EMAC0_MCMDR, inpw(REG_EMAC0_MCMDR) | 0x101);
+	//outpw(REG_EMAC0_MCMDR, inpw(REG_EMAC0_MCMDR) | 0x101);
 
 	ETH0_TRIGGER_RX();
 	//ETH0_TRIGGER_TX();
@@ -451,9 +459,17 @@ void nuc970_emac_txDaemon (void *arg)
         }
 #else
 		//printk("%s:(0x%x)\n\r", __func__, sc->ethDrv.pHw->EMAC_IMR);
+        if (sc->cur_tx_desc_ptr->status1 & OWNERSHIP_EMAC)
+            continue;
+        
 		IF_DEQUEUE(&ifp->if_snd, m);
 		if (m)
+        {
 			nuc970_emac_sendpacket(sc, ifp, m);
+        }
+
+
+
 #endif
         ifp->if_flags &= ~IFF_OACTIVE;
     }
@@ -461,7 +477,45 @@ void nuc970_emac_txDaemon (void *arg)
 
 void nuc970_emac_sendpacket (nuc970_emac_softc_t *sc, struct ifnet *ifp, struct mbuf *m)
 {
+	struct eth_descriptor volatile *desc;
+	struct mbuf *l = NULL;
+    unsigned int pkt_offset = 0;
+	uint8_t *buff;
 
+
+	l = m;
+	buff = (uint8_t *) sc->cur_tx_desc_ptr->buf;
+    while (l != NULL) {
+        memcpy(((char *)buff + pkt_offset),  /* offset into pkt for mbuf */
+               (char *)mtod(l, void *),       /* cast to void */
+               l->m_len);                     /* length of this mbuf */
+
+        pkt_offset += l->m_len;               /* update offset */
+        l = l->m_next;                        /* get next mbuf, if any */
+    }
+    {
+        int i ;
+        printk("\r\n");
+        for (i = 0; i < pkt_offset; i++)
+            printk("%02x ", buff[i]);
+        printk("\r\n");
+    }
+
+    /* free the mbuf chain we just copied */
+    m_freem(m);
+
+    if ((sc->cur_tx_desc_ptr->status1 & OWNERSHIP_EMAC) == OWNERSHIP_EMAC) 
+        printk("#");
+    else
+        printk("@");
+
+	sc->cur_tx_desc_ptr->status2 = (unsigned int)pkt_offset;
+	desc = sc->cur_tx_desc_ptr->next;    // in case TX is transmitting and overwrite next pointer before we can update cur_tx_desc_ptr
+	sc->cur_tx_desc_ptr->status1 = OWNERSHIP_EMAC |  TXFD_CRCAPP | TXFD_PADEN |   TXFD_INTEN;
+	sc->cur_tx_desc_ptr = desc;
+
+
+	ETH0_TRIGGER_TX();
 }
 
 
@@ -473,7 +527,7 @@ void nuc970_emac_rxDaemon(void *arg)
     struct ether_header eh;
     rtems_event_set events;
     uint32_t pktlen;
-	int rc = 0;
+	uint32_t status;
 	
     /* Input packet handling loop */
     for (;;) {
@@ -485,35 +539,52 @@ void nuc970_emac_rxDaemon(void *arg)
 		
 		//tr("start receive...\n\r");
 		do {
+			status = sc->cur_rx_desc_ptr->status1;
+			//printk(".");
 
-            /* get an mbuf this packet */
-            MGETHDR(m, M_WAIT, MT_DATA);
-
-            /* now get a cluster pointed to by the mbuf */
-            /* since an mbuf by itself is too small */
-            MCLGET(m, M_WAIT);
-
-            /* set the type of mbuf to ifp (ethernet I/F) */
-            m->m_pkthdr.rcvif = ifp;
-            m->m_nextpkt = 0;
-
-			//rc = EMAC_Receive(&sc->ethDrv, m->m_ext.ext_buf, EMAC_FRAME_LENTGH_MAX, &pktlen);
-			//tr("emac rc:%d\n\r", rc);
-
-			//rc = EMAC_RecPkt(&sc->ethDrv, &eh, m);
-			
-			if (rc)
+			if (status & OWNERSHIP_EMAC)
 			{
-
-	            /* give all this stuff to the stack */
-	            ether_input(ifp, &eh, m);
-			}
-			else
-			{
-				m_freem(m);
+				//printk("X");
+				break;
 			}
 
-		} while (rc);
+			if (status & RXFD_RXGD) {
+
+				//ethernetif_input0(status & 0xFFFF, sc->cur_rx_desc_ptr->buf);
+				/* get an mbuf this packet */
+				MGETHDR(m, M_WAIT, MT_DATA);
+
+				/* now get a cluster pointed to by the mbuf */
+				/* since an mbuf by itself is too small */
+				MCLGET(m, M_WAIT);
+
+				/* set the type of mbuf to ifp (ethernet I/F) */
+				m->m_pkthdr.rcvif = ifp;
+				m->m_nextpkt = 0;
+
+				pktlen = status & 0xFFFF;
+
+				memcpy(&eh, sc->cur_rx_desc_ptr->buf, sizeof(struct ether_header));
+				memcpy(m->m_ext.ext_buf,
+						sc->cur_rx_desc_ptr->buf + sizeof(struct ether_header), 
+						pktlen - sizeof(struct ether_header));
+                
+                {
+                    int i ;
+                    printk("rx:\r\n");
+                    for (i = 0; i < pktlen; i++)
+                        printk("%02x ", sc->cur_rx_desc_ptr->buf[i]);
+                    printk("\r\n");
+                }
+
+				/* give all this stuff to the stack */
+				ether_input(ifp, &eh, m);
+			}
+
+			sc->cur_rx_desc_ptr->status1 = OWNERSHIP_EMAC;
+			sc->cur_rx_desc_ptr = sc->cur_rx_desc_ptr->next;
+		} while (1);
+		ETH0_TRIGGER_RX();
     } /* for (;;) */
 } /* nuc970_emac_rxDaemon() */
 
@@ -602,6 +673,7 @@ static void nuc970_emac_rx_isr (void * arg)
         // Shouldn't goes here, unless descriptor corrupted
     }
 
+#if 0
     do {
         status = sc->cur_rx_desc_ptr->status1;
 
@@ -610,8 +682,8 @@ static void nuc970_emac_rx_isr (void * arg)
 
         if (status & RXFD_RXGD) {
 
-            ethernetif_input0(status & 0xFFFF, sc->cur_rx_desc_ptr->buf);
-
+            //ethernetif_input0(status & 0xFFFF, sc->cur_rx_desc_ptr->buf);
+			
 
         }
 
@@ -621,6 +693,11 @@ static void nuc970_emac_rx_isr (void * arg)
     } while (1);
 
     ETH0_TRIGGER_RX();
+#else
+	rtems_bsdnet_event_send (sc->rxDaemonTid, START_RECEIVE_EVENT);
+	//printk("<");
+#endif
+
 }
 
 static void nuc970_emac_tx_isr (void * arg)
@@ -643,7 +720,8 @@ static void nuc970_emac_tx_isr (void * arg)
 
         sc->fin_tx_desc_ptr = sc->fin_tx_desc_ptr->next;
     }
-
+	rtems_bsdnet_event_send (sc->txDaemonTid, START_TRANSMIT_EVENT);
+	printk(">");
 }
 
 
@@ -742,13 +820,13 @@ static void init_tx_desc(nuc970_emac_softc_t *sc)
     uint32_t i;
 	const uint32_t offset = 0x0; //0x80000000
 
-    sc->cur_tx_desc_ptr = sc->fin_tx_desc_ptr = (struct eth_descriptor *)((UINT)(&tx_desc[0]) | offset);
+    sc->cur_tx_desc_ptr = sc->fin_tx_desc_ptr = (struct eth_descriptor *)((uint32_t)(&tx_desc[0]) | offset);
 	
     for(i = 0; i < TX_DESCRIPTOR_NUM; i++) {
         tx_desc[i].status1 = TXFD_PADEN | TXFD_CRCAPP | TXFD_INTEN;
-        tx_desc[i].buf = (unsigned char *)((UINT)(&eth_tx_buff[i][0]) | offset);
+        tx_desc[i].buf = (unsigned char *)((uint32_t)(&eth_tx_buff[i][0]) | offset);
         tx_desc[i].status2 = 0;
-        tx_desc[i].next = (struct eth_descriptor *)((UINT)(&tx_desc[(i + 1) % TX_DESCRIPTOR_NUM]) | 0x80000000);
+        tx_desc[i].next = (struct eth_descriptor *)((uint32_t)(&tx_desc[(i + 1) % TX_DESCRIPTOR_NUM]) | offset);
     }
     outpw(REG_EMAC0_TXDLSA, (unsigned int)&tx_desc[0] | offset);
     return;
@@ -759,13 +837,13 @@ static void init_rx_desc(nuc970_emac_softc_t *sc)
     uint32_t i;
 	const uint32_t offset = 0x0; //0x80000000
 
-    sc->cur_rx_desc_ptr = (struct eth_descriptor *)((UINT)(&rx_desc[0]) | offset);
+    sc->cur_rx_desc_ptr = (struct eth_descriptor *)((uint32_t)(&rx_desc[0]) | offset);
 
     for(i = 0; i < RX_DESCRIPTOR_NUM; i++) {
         rx_desc[i].status1 = OWNERSHIP_EMAC;
-        rx_desc[i].buf = (unsigned char *)((UINT)(&eth_rx_buff[i][0]) | offset);
+        rx_desc[i].buf = (unsigned char *)((uint32_t)(&eth_rx_buff[i][0]) | offset);
         rx_desc[i].status2 = 0;
-        rx_desc[i].next = (struct eth_descriptor *)((UINT)(&rx_desc[(i + 1) % RX_DESCRIPTOR_NUM]) | 0x80000000);
+        rx_desc[i].next = (struct eth_descriptor *)((uint32_t)(&rx_desc[(i + 1) % RX_DESCRIPTOR_NUM]) | offset);
     }
     outpw(REG_EMAC0_RXDLSA, (unsigned int)&rx_desc[0] | offset);
     return;
@@ -793,19 +871,3 @@ static void ETH0_halt(void)
     
 }
 
-
-	#if 0
-void ETH0_trigger_tx(uint16_t length, struct pbuf *p)
-{
-
-    struct eth_descriptor volatile *desc;
-    cur_tx_desc_ptr->status2 = (unsigned int)length;
-    desc = cur_tx_desc_ptr->next;    // in case TX is transmitting and overwrite next pointer before we can update cur_tx_desc_ptr
-    cur_tx_desc_ptr->status1 |= OWNERSHIP_EMAC;
-    cur_tx_desc_ptr = desc;
-
-
-    ETH0_TRIGGER_TX();
-
-}
-	#endif
